@@ -19,11 +19,15 @@ namespace Dissertation_mk2
         public int score;
         public double averageFlow;
         public int numTurns;
+        public int enemKilled;
         private List<int> anxietyEachTurn;
         public int averageAnxiety;
         public double pValue;
         public List<int> allyHp;
         public bool wasGameOver;
+
+        //Personality evaluation
+        
 
         public Solution(Board board, string personality, double pValue, int numItems, int numEnemies)
         {
@@ -39,21 +43,17 @@ namespace Dissertation_mk2
 
         private void SaveBoard(List<List<float>> initial)
         {
-            List<float> initialRow = new List<float>();
-            foreach (var row in initial)
+            foreach (var initialRow in initial.Select(row => row.ToList()))
             {
-                foreach (var tile in row)
-                {
-                    initialRow.Add(tile);
-                }
                 initialBoard.Add(initialRow);
             }
         }
 
-        public void UpdateValues(int score, int numTurns, List<int> anxietyEachTurn, List<int> allyHp, bool wasGameOver = false)
+        public void UpdateValues(int score, int numTurns, int enemKilled, List<int> anxietyEachTurn, List<int> allyHp, bool wasGameOver = false)
         {
             this.score = score;
             this.numTurns = numTurns;
+            this.enemKilled = enemKilled;
             this.anxietyEachTurn = anxietyEachTurn;
             this.allyHp = allyHp;
             this.wasGameOver = wasGameOver;
@@ -63,7 +63,7 @@ namespace Dissertation_mk2
         private void CalculateValues()
         {
             averageAnxiety = anxietyEachTurn.Sum();
-            averageFlow = (double)anxietyEachTurn.Sum(Math.Abs) / numTurns;
+            averageFlow = (double) anxietyEachTurn.Sum(Math.Abs) / anxietyEachTurn.Count;
             Console.WriteLine("Anxieties: " + IntBuilder(anxietyEachTurn));
             Console.WriteLine("Average anxiety: " + averageAnxiety);
             Console.WriteLine("Average Distance from flow: " + averageFlow);
@@ -71,8 +71,9 @@ namespace Dissertation_mk2
             Console.WriteLine("Hp: " + IntBuilder(allyHp));
             Console.WriteLine("Num turns: " + numTurns);
             Console.WriteLine("Num items: " + score + "/" + numItems);
-            Console.WriteLine("Num enemies: " + numEnemies);
+            Console.WriteLine("Num enemies killed: " + enemKilled + "/5");
         }
+
 
         public int CompareMap(Solution other)
         {

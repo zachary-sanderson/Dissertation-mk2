@@ -24,6 +24,7 @@ namespace Dissertation_mk2
         //For level ranking
         private int turnCount;
         public int numItems;
+        private int enemKilled;
 
         //For GA
         private GA geneticAlg;
@@ -58,7 +59,7 @@ namespace Dissertation_mk2
 
         public void PlayGame()
         {
-            Console.WriteLine("enemy count " + enemies.Count);
+            Console.WriteLine("Enemy count " + enemies.Count);
             Console.WriteLine("Ally Count " + allies.Count);
             while (!gameOver)
             {
@@ -102,6 +103,8 @@ namespace Dissertation_mk2
                 if (turnCount % 5 == 0)
                     board.markov.Transition();
                 noEnemiesNear = true;
+                if (50 < anxiety || anxiety < -50)
+                    GameOver();
             }
         }
 
@@ -169,7 +172,7 @@ namespace Dissertation_mk2
         private void StoreData(bool isGameOver)
         {
             List<int> allyHp = allies.Select(ally => ally.hp).ToList();
-            currentSolution.UpdateValues(board.score, turnCount, anxietyEachTurn, allyHp, isGameOver);
+            currentSolution.UpdateValues(board.score, turnCount, enemKilled, anxietyEachTurn, allyHp, isGameOver);
         }
 
         //Called each term to update the anxiety value;
@@ -180,7 +183,7 @@ namespace Dissertation_mk2
                 CalculateAnxiety(ally);
             }
 
-            if (enemies.Count == 0) cDecay = 1; 
+            if (enemies.Count == 0) cDecay = 1;
             if (noEnemiesNear)
                 anxiety -= 1;
             else
@@ -222,6 +225,7 @@ namespace Dissertation_mk2
         public void EnemyDead(Enemy enemy)
         {
             enemy.isDead = true;
+            enemKilled++;
             anxiety -= 3;
         }
     }

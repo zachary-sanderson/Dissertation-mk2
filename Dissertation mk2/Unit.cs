@@ -56,7 +56,7 @@ namespace Dissertation_mk2
             var (target, reachable) = FindReachable(targetPos);
             if (reachable == false)
                 Console.WriteLine(targetPos[0] + " " + targetPos[1] + " is unreachable");
-            targetPos = target;
+            targetPos = target ?? startPos;
             Node currentNode = new Node(startPos, 0, CheckDistance(startPos, targetPos), null, true);
             List<Node> closedList = new List<Node>();
             List<Node> openList = new List<Node> { currentNode };

@@ -1,63 +1,76 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
 using System.Text;
-using System.Transactions;
 
 namespace Dissertation_mk2
 {
     public class Markov
     {
-        readonly Random rand = new Random();
+        private readonly Random rand = new Random();
         public bool Aggressive;
         public bool Explorer;
         public bool Speedy;
         public string Personality;
-        public double pValue;
 
         private double[][] matrix;
+
+        private const double Third = 1 / (double) 3;
+        private const double TwoThirds = 2 / (double) 3;
+        private const double OneSixth = Third / 2;
+        private const double FiveSixths = TwoThirds + OneSixth;
 
         public Markov(double p)
         {
             Console.WriteLine(p);
-            double third = 1 / (double) 3;
-            double twoThirds = 2 / (double) 3;
-            double oneSixth = third / 2;
-            double fiveSixths = twoThirds + oneSixth;
+            
             if (p < 1/(double)3)
             {
-                double prob = ((1 / (double)6) - p);
-                double[] line1 = {fiveSixths + prob,  1-(p/2), 1};
-                double[] line2 = {third + prob, 1 - p, 1};
-                double[] line3 = {third - p, 0.5 + prob, 1};
-                matrix = new[] { line1, line2, line3 };
-                Speedy = true;
-                Personality = "Speedy";
-                Console.WriteLine("Speedy");
+                SetSpeedy(p);
             }
             else if (p < 2/(double)3)
             {
-                double prob = 0.5 - p;
-                double[] line1 = { 0.5 + prob, fiveSixths + (prob/3), 1};
-                double[] line2 = {third - (p/3), 1 - (p/3), 1 };
-                double[] line3 = {oneSixth + (prob/3), 0.5 + prob, 1};
-                matrix = new[] { line1, line2, line3 };
-                Aggressive = true;
-                Personality = "Aggressive";
-                Console.WriteLine("Aggressive");
+                SetAggressive(p);
             }
             else
             {
-                double prob = ((5 / (double) 6) - p);
-                double[] line1 = { third + (1-p), twoThirds + prob, 1 };
-                double[] line2 = {1 - p, twoThirds + prob, 1 };
-                double[] line3 = {(1 - p)/2, oneSixth + prob, 1 };
-                matrix = new[] {line1, line2, line3};
-                Explorer = true;
-                Personality = "Explorer";
-                Console.WriteLine("Explorer");
+                SetExplorer(p);
             }
             PrintMatrix();
+        }
+
+        private void SetSpeedy(double p)
+        {
+            double prob = ((1 / (double)6) - p);
+            double[] line1 = { FiveSixths + prob, 1 - (p / 2), 1 };
+            double[] line2 = { Third + prob, 1 - p, 1 };
+            double[] line3 = { Third - p, 0.5 + prob, 1 };
+            matrix = new[] { line1, line2, line3 };
+            Speedy = true;
+            Personality = "Speedy";
+            Console.WriteLine("Speedy");
+        }
+
+        private void SetAggressive(double p)
+        {
+            double prob = 0.5 - p;
+            double[] line1 = { 0.5 + prob, FiveSixths + (prob / 3), 1 };
+            double[] line2 = { Third - (p / 3), 1 - (p / 3), 1 };
+            double[] line3 = { OneSixth + (prob / 3), 0.5 + prob, 1 };
+            matrix = new[] { line1, line2, line3 };
+            Aggressive = true;
+            Personality = "Aggressive";
+            Console.WriteLine("Aggressive");
+        }
+
+        private void SetExplorer(double p)
+        {
+            double prob = ((5 / (double)6) - p);
+            double[] line1 = { Third + (1 - p), TwoThirds + prob, 1 };
+            double[] line2 = { 1 - p, TwoThirds + prob, 1 };
+            double[] line3 = { (1 - p) / 2, OneSixth + prob, 1 };
+            matrix = new[] { line1, line2, line3 };
+            Explorer = true;
+            Personality = "Explorer";
+            Console.WriteLine("Explorer");
         }
 
         public void Transition()

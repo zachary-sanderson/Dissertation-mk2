@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Dissertation_mk2
 {
@@ -21,7 +22,7 @@ namespace Dissertation_mk2
 
         public int columns = 25;
         public int rows = 25;
-        public Count wallCount = new Count(100, 150);
+        public Count wallCount = new Count(100, 120);
         public Count itemCount = new Count(4, 4);
         public Count enemyCount = new Count(5, 5);
 
@@ -43,6 +44,8 @@ namespace Dissertation_mk2
         public int numItems;
         public int numEnemies;
         public int numWalls;
+        public int numAllies;
+        private bool hasGoal;
 
         public Board(double pValue)
         {
@@ -54,6 +57,7 @@ namespace Dissertation_mk2
         {
             this.board = board;
             markov = new Markov(pValue);
+            goalPos.Add(0); goalPos.Add(columns - 1);
             validated = ValidateBoard();
         }
 
@@ -150,48 +154,16 @@ namespace Dissertation_mk2
 
         public bool ValidateBoard()
         {
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < rows; j++)
-                {
-                    List<int> pos = new List<int> {i, j};
-                    float tile = CheckPosition(pos);
-                    switch ((int)tile)
-                    {
-                        case 1:
-                            numWalls++;
-                            break;
-                        case 2:
-                            numItems++;
-                            itemPositions.Add(pos);
-                            break;
-                        case 4:
-                            numEnemies++;
-                            Enemy enemy = new Enemy(this, tile, pos);
-                            enemyPositions.Add(pos);
-                            if (gameManager != null)
-                                gameManager.AddEnemyToList(enemy);
-                            else
-                                enemies.Add(enemy);
-                            break;
-                        case 5:
-                            Ally ally = new Ally(this, tile, pos);
-                            if (gameManager != null)
-                                gameManager.AddAllyToList(ally);
-                            else
-                                allies.Add(ally);
-                            break;
-                        
-                    }
-                }
-            }
-
-            //ADD them to enemy positions etc.
+            CheckTiles();
+            if (!hasGoal)
+                return false;
+            if (numAllies != 5)
+                return false;
             if (numEnemies != 5)
                 return false;
             if (numItems != 4)
                 return false;
-            if (numWalls < 100 || numWalls > 150)
+            if (numWalls < 100 || numWalls > 120)
                 return false;
 
             bool pathToGoal = false;
@@ -223,6 +195,81 @@ namespace Dissertation_mk2
             return pathToGoal && items.All(pathToItem => pathToItem);
         }
 
+        private void CheckTiles()
+        {
+            List<float> enemyIds = new List<float>();
+            List<List<int>> enemyPosList = new List<List<int>>();
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < rows; j++)
+                {
+                    List<int> pos = new List<int> { i, j };
+                    float tile = CheckPosition(pos);
+                    switch ((int)tile)
+                    {
+                        case 1:
+                            numWalls++;
+                            break;
+                        case 2:
+                            numItems++;
+                            itemPositions.Add(pos);
+                            break;
+                        case 3:
+                            hasGoal = true;
+                            break;
+                        case 4:
+                            numEnemies++;
+                            enemyIds.Add(tile);
+                            enemyPosList.Add(pos);
+                            break;
+                        case 5:
+                            numAllies++;
+                            Ally ally = new Ally(this, tile, pos);
+                            if (gameManager != null)
+                                gameManager.AddAllyToList(ally);
+                            else
+                                allies.Add(ally);
+                            break;
+
+                    }
+                }
+            }
+            UpdateEnemies(enemyIds, enemyPosList);
+        }
+
+        public void UpdateEnemies(List<float> ids, List<List<int>> posList)
+        {
+            if (ids.Count == 0) return;
+            List<float> taken = new List<float>();
+            foreach (var id in ids.Where(id => !taken.Contains(id)))
+            {
+                taken.Add(id);
+            }
+
+            var max = taken.Max();
+            for (int i = 0; i < ids.Count; i++)
+            {
+                var id = ids[i];
+                var pos = posList[i];
+                if (taken.Contains(id))
+                {
+                    taken.Remove(id);
+                }
+                else
+                {
+                    max += 0.1f;
+                    id = max;
+                }
+                Enemy enemy = new Enemy(this, id, pos);
+                board[pos[0]][pos[1]] = id;
+                enemyPositions.Add(pos);
+                if (gameManager != null)
+                    gameManager.AddEnemyToList(enemy);
+                else
+                    enemies.Add(enemy);
+            }
+        }
+
         public void SetupScene()
         {
             //0=Floor,1=Wall,2=Item,3=goal,4=enemy,5=player
@@ -233,6 +280,20 @@ namespace Dissertation_mk2
             LayoutObjectAtRandom(2, itemCount.minimum, itemCount.maximum);
             LayoutObjectAtRandom(4f, enemyCount.minimum, enemyCount.maximum);
             validated = ValidateBoard();
+        }
+
+        private static string Builder(IEnumerable<List<float>> board)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var row in board)
+            {
+                foreach (var tile in row)
+                {
+                    builder.Append(tile + " ");
+                }
+                builder.AppendLine();
+            }
+            return builder.ToString();
         }
     }
 
