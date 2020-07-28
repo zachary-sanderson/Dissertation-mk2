@@ -6,4 +6,8 @@
     <RootNamespace>Dissertation_mk2</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="4.3.0" />
+  </ItemGroup>
+
 </Project>

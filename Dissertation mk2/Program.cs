@@ -6,7 +6,7 @@ namespace Dissertation_mk2
     {
         static void Main(string[] args)
         {
-            GA geneticAlg = new GA();
+            _ = new GA();
         }
     }
 }

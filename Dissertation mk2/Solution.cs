@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Text;
 using System.Linq;
 
@@ -41,7 +40,7 @@ namespace Dissertation_mk2
             enemyPositions = board.enemyPositions;
         }
 
-        private void SaveBoard(List<List<float>> initial)
+        private void SaveBoard(IEnumerable<List<float>> initial)
         {
             foreach (var initialRow in initial.Select(row => row.ToList()))
             {
@@ -74,33 +73,39 @@ namespace Dissertation_mk2
             Console.WriteLine("Num enemies killed: " + enemKilled + "/5");
         }
 
+        public List<int> CompareMap(Solution other)
+        {
+            return new List<int> {CompareWalls(other), CompareEnemies(other).Sum(), CompareItems(other).Sum()};
+        }
 
-        public int CompareMap(Solution other)
+        private int CompareWalls(Solution other)
         {
             int count = 0;
             for (int i = 0; i < initialBoard.Count; i++)
             {
                 for (int j = 0; i < initialBoard.Count; i++)
                 {
-                    if ((int)initialBoard[i][j] == (int)other.initialBoard[i][j]) count++;
+                    var tile = (int)initialBoard[i][j];
+                    if (tile != 1) continue;
+                    if ((int) initialBoard[i][j] != (int) other.initialBoard[i][j]) count++;
                 }
             }
             return count;
         }
 
         //For two solutions compares the shortest distance each enemy has from another enemy in the initial map.
-        public List<int> CompareEnemies(Solution other)
+        private IEnumerable<int> CompareEnemies(Solution other)
         {
             return enemyPositions.Select(position => other.enemyPositions.Select(otherPosition => CheckDistance(position, otherPosition)).Concat(new[] {100}).Min()).ToList();
         }
 
         //For two solutions compares the shortest distance each item has from another item in the initial map.
-        public List<int> CompareItems(Solution other)
+        private IEnumerable<int> CompareItems(Solution other)
         {
             return itemPositions.Select(position => other.itemPositions.Select(otherPosition => CheckDistance(position, otherPosition)).Concat(new[] {100}).Min()).ToList();
         }
 
-        private static int CheckDistance(List<int> startPos, List<int> endPos)
+        private static int CheckDistance(IReadOnlyList<int> startPos, IReadOnlyList<int> endPos)
         {
             int xDiff = Math.Abs(endPos[0] - startPos[0]);
             int yDiff = Math.Abs(endPos[1] - startPos[1]);

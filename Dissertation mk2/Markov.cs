@@ -78,30 +78,25 @@ namespace Dissertation_mk2
             double transition = rand.NextDouble();
             if (Speedy)
             {
-                for (int i = 0; i < matrix.Length; i++)
-                {
-                    if (!(transition < matrix[0][i])) continue;
-                    WhichBehaviour(i);
-                    return;
-                }
+                CheckTransition(transition, 0);
             }
             else if (Aggressive)
             {
-                for (int i = 0; i < matrix.Length; i++)
-                {
-                    if (!(transition < matrix[1][i])) continue;
-                    WhichBehaviour(i);
-                    return;
-                }
+                CheckTransition(transition, 1);
             }
             else
             {
-                for (int i = 0; i < matrix.Length; i++)
-                {
-                    if (!(transition < matrix[2][i])) continue;
-                    WhichBehaviour(i);
-                    return;
-                }
+                CheckTransition(transition, 2);
+            }
+        }
+
+        void CheckTransition(double transition, int row)
+        {
+            for (int i = 0; i < matrix.Length; i++)
+            {
+                if (!(transition < matrix[row][i])) continue;
+                WhichBehaviour(i);
+                return;
             }
         }
 

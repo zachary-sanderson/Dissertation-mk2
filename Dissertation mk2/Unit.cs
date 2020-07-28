@@ -30,8 +30,8 @@ namespace Dissertation_mk2
             {
                 List<int> move = pos.Select((t, i) => t + direction[i]).ToList();
                 if (board.OutOfRange(move)) continue;
-                float tile = board.CheckPosition(move);
-                if (tile == 0 || tile == 2)
+                var tile = board.CheckPosition(move);
+                if ((int)tile == 0 || (int)tile == 2)
                     canMove = true;
             }
 
@@ -51,6 +51,7 @@ namespace Dissertation_mk2
             return (move, targetFound);
         }
 
+        //A* algorithm designed to work for a matrix
         public (List<List<int>>, bool) FindPath(List<int> startPos, List<int> targetPos)
         {
             var (target, reachable) = FindReachable(targetPos);

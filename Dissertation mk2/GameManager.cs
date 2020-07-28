@@ -23,11 +23,9 @@ namespace Dissertation_mk2
 
         //For level ranking
         private int turnCount;
-        public int numItems;
         private int enemKilled;
 
         //For GA
-        private GA geneticAlg;
         private Solution currentSolution;
 
         /*
@@ -42,9 +40,8 @@ namespace Dissertation_mk2
         }
         */
 
-        public GameManager(GA geneticAlg, Solution solution, int cSkill)
+        public GameManager(Solution solution, int cSkill)
         {
-            this.geneticAlg = geneticAlg;
             this.cSkill = cSkill;
             board = solution.boardObj;
             board.gameManager = this;

@@ -29,7 +29,7 @@ namespace Dissertation_mk2
         public GA()
         {
             int iter = 0;
-            List<List<double>> personalityFLagsList = new List<List<double>>();
+            var personalityFLagsList = new List<List<double>>();
             //Random rand = new Random();
             //double pValue = rand.NextDouble();
             double pValue = 0d;
@@ -45,7 +45,7 @@ namespace Dissertation_mk2
                     IsFeasible(newBoard, pValue);
                 }
 
-                foreach (var gameManager in feasible.Select(solution => new GameManager(this, solution, 0)))
+                foreach (var gameManager in feasible.Select(solution => new GameManager(solution, 0)))
                 {
                     gameManager.PlayGame();
                 }
@@ -67,7 +67,7 @@ namespace Dissertation_mk2
 
                     if (solution.enemKilled == 5) personalityFlags.Add(0.5d);
 
-                    if (solution.numTurns < 15) personalityFlags.Add(0d);
+                    if (solution.numTurns < 14) personalityFlags.Add(0d);
 
                     if (solution.score == solution.numItems) personalityFlags.Add(1d);
                 }
@@ -83,7 +83,7 @@ namespace Dissertation_mk2
                 Console.WriteLine("Infeasible Count: " + Infeasible.Count);
             }
             Console.WriteLine("Best Flow: " + bestFlow);
-            //Console.WriteLine(Builder(bestSolution.initialBoard));
+            Console.WriteLine(Builder(bestSolution.initialBoard));
 
             EstimatePersonality(personalityFLagsList);
 
@@ -152,12 +152,6 @@ namespace Dissertation_mk2
             Console.WriteLine("num enemies = " + newBoard.numEnemies);
             Console.WriteLine("num items = " + newBoard.numItems);
             Console.WriteLine("num walls = " + newBoard.numWalls);
-            Console.WriteLine(newBoard.board[0].Count);
-            if (newBoard.board[0][24] != 3)
-            {
-                Console.WriteLine("wack error");
-                return;
-            }
             if (newBoard.validated)
                 feasible.Add(new Solution(newBoard, newBoard.markov.Personality, pValue, newBoard.numItems, newBoard.numEnemies));
             else
