@@ -137,6 +137,7 @@ namespace Dissertation_mk2
 
         public void Attack(Ally unit)
         {
+            hasAttacked = true;
             Console.WriteLine(id + " attacking " + unit.id + ", units hp is " + unit.hp);
             if (unit.engaged)
             {

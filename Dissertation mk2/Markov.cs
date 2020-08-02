@@ -90,7 +90,7 @@ namespace Dissertation_mk2
             }
         }
 
-        void CheckTransition(double transition, int row)
+        private void CheckTransition(double transition, int row)
         {
             for (int i = 0; i < matrix.Length; i++)
             {
@@ -100,7 +100,7 @@ namespace Dissertation_mk2
             }
         }
 
-        public void WhichBehaviour(int i)
+        private void WhichBehaviour(int i)
         {
             Console.WriteLine("i is " + i);
             switch (i)
@@ -126,7 +126,7 @@ namespace Dissertation_mk2
             }
         }
 
-        public void PrintMatrix()
+        private void PrintMatrix()
         {
             Console.WriteLine(Builder(matrix));
         }

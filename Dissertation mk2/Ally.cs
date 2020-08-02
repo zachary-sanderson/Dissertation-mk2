@@ -19,7 +19,6 @@ namespace Dissertation_mk2
             initialHp = hp;
         }
 
-        //Take turn unless checking the anxiety presented by a future turn.
         public void TakeTurn()
         {
             List<int> startPos = new List<int> { pos[0], pos[1] };
@@ -37,47 +36,21 @@ namespace Dissertation_mk2
             hasAttacked = false;
         }
 
-        private bool NearGameOver()
-        {
-            int combinedHp = board.gameManager.allies.Sum(ally => ally.hp);
-
-            return combinedHp < 6;
-        }
-
+        //*******************************************************
+        //    CHECK IF GOAL, ENEMIES OR ITEMS ARE IN RANGE
+        //*******************************************************
         private void CheckMoves()
         {
-            foreach (var enemy in board.gameManager.enemies)
-            {
-                if (enemy.hp <= 0) continue;
+            CheckForGoal();
+            CheckForEnemies();
+            CheckForItems();
+        }
 
-                var path = FindPath(pos, enemy.pos);
-                enemyPaths.Add(path.Item1);
-
-                if (path.Item1.Count < 6 && path.Item2)
-                {
-                    Console.WriteLine("Path to Enemy " + enemy.id + ":");
-                    foreach (var node in path.Item1)
-                    {
-                        Console.WriteLine(node[0] + " " + node[1]);
-                    }
-                    enemiesInRange.Add(enemy.pos);
-                }
-            }
-
-            foreach (var item in board.itemPositions)
-            {
-                var path = FindPath(pos, item);
-                itemPaths.Add(path.Item1);
-                if (path.Item1.Count < 6 && path.Item2)
-                {
-                    Console.WriteLine("item in range: " + item[0] + " " + item[1]);
-                    itemsInRange.Add(item);
-                }
-            }
-
-            var goalPath = FindPath(pos, board.goalPos);
-            pathToGoal = goalPath.Item1;
-            if (pathToGoal.Count < 6 && goalPath.Item2)
+        private void CheckForGoal()
+        {
+            var (path, reachable) = FindPath(pos, board.goalPos);
+            pathToGoal = path;
+            if (pathToGoal.Count < 6 && reachable)
             {
                 Console.WriteLine("Path to goal:");
                 foreach (var node in pathToGoal)
@@ -87,6 +60,45 @@ namespace Dissertation_mk2
                 goalInRange = true;
             }
         }
+
+        private void CheckForEnemies()
+        {
+            foreach (var enemy in board.gameManager.enemies.Where(enemy => enemy.hp > 0))
+            {
+                var (path, reachable) = FindPath(pos, enemy.pos);
+                enemyPaths.Add(path);
+
+                if (path.Count < range + 1 && reachable)
+                {
+                    Console.WriteLine("Path to Enemy " + enemy.id + ":");
+                    foreach (var node in path)
+                    {
+                        Console.WriteLine(node[0] + " " + node[1]);
+                    }
+                    enemiesInRange.Add(enemy.pos);
+                }
+            }
+        }
+
+        private void CheckForItems()
+        {
+            foreach (var item in board.itemPositions)
+            {
+                var (path, reachable) = FindPath(pos, item);
+                itemPaths.Add(path);
+                if (path.Count < 6 && reachable)
+                {
+                    Console.WriteLine("item in range: " + item[0] + " " + item[1]);
+                    itemsInRange.Add(item);
+                }
+            }
+        }
+        //***********************************************************************
+       
+
+
+
+
 
         private void Move()
         {
@@ -162,6 +174,13 @@ namespace Dissertation_mk2
                     SwapPosition(move);
                 }
             }
+        }
+
+        private bool NearGameOver()
+        {
+            int combinedHp = board.gameManager.allies.Sum(ally => ally.hp);
+
+            return combinedHp < 6;
         }
 
         /*Moves towards enemy with lowest Hp that's within 2 moves away*/

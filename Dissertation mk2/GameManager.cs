@@ -29,18 +29,6 @@ namespace Dissertation_mk2
         private readonly Solution currentSolution;
         private List<Move> moves = new List<Move>();
 
-        /*
-        public GameManager(GA geneticAlg, double pValue, int cSkill)
-        {
-            this.geneticAlg = geneticAlg;
-            this.cSkill = cSkill;
-            board = new Board(this, pValue);
-            InitGame();
-            currentSolution = new Solution(board, board.markov.Personality, board.markov.pValue, numItems, enemies.Count);
-            PlayGame();
-        }
-        */
-
         public GameManager(Solution solution, int cSkill)
         {
             this.cSkill = cSkill;
