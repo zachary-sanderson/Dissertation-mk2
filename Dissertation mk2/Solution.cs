@@ -24,6 +24,7 @@ namespace Dissertation_mk2
         public double pValue;
         public List<int> allyHp;
         public bool wasGameOver;
+        public List<Move> moves;
 
         //Personality evaluation
         
@@ -48,13 +49,14 @@ namespace Dissertation_mk2
             }
         }
 
-        public void UpdateValues(int score, int numTurns, int enemKilled, List<int> anxietyEachTurn, List<int> allyHp, bool wasGameOver = false)
+        public void UpdateValues(int score, int numTurns, int enemKilled, List<int> anxietyEachTurn, List<int> allyHp, List<Move> moves, bool wasGameOver = false)
         {
             this.score = score;
             this.numTurns = numTurns;
             this.enemKilled = enemKilled;
             this.anxietyEachTurn = anxietyEachTurn;
             this.allyHp = allyHp;
+            this.moves = moves;
             this.wasGameOver = wasGameOver;
             CalculateValues();
         }

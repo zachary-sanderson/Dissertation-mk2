@@ -95,6 +95,12 @@ namespace Dissertation_mk2
             finalGM.PlayGame();
             */
             Console.WriteLine("Average num turns: " + (double)numTurns.Sum()/numTurns.Count);
+            foreach (var move in bestSolution.moves)
+            {
+                string attacked;
+                attacked = move.Attack ? "attacks." : "doesn't attack.";
+                Console.WriteLine("turn:" + move.TurnNum + "  " + move.Type + " moves from " + move.StartPos[0] + " " + move.StartPos[1] + " to " + move.EndPos[0] + " " + move.EndPos[1] + " and " + attacked);
+            }
         }
 
         private void CrossoverFeasible(double pValue)
@@ -336,7 +342,7 @@ namespace Dissertation_mk2
         }
 
 
-        private void EstimatePersonality(List<List<double>> personalityFlagList)
+        private void EstimatePersonality(IReadOnlyList<List<double>> personalityFlagList)
         {
             List<double> sums = new List<double>();
             int count = 0;
@@ -359,9 +365,10 @@ namespace Dissertation_mk2
 
         private static string Builder(IEnumerable<List<float>> board)
         {
-            Console.WriteLine(board.Count());
+            var enumerable = board as List<float>[] ?? board.ToArray();
+            Console.WriteLine(enumerable.Count());
             StringBuilder builder = new StringBuilder();
-            foreach (var row in board)
+            foreach (var row in enumerable)
             {
                 foreach (var tile in row)
                 {

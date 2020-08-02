@@ -17,6 +17,7 @@ namespace Dissertation_mk2
 
         public void TakeTurn()
         {
+            List<int> startPos = new List<int> {pos[0], pos[1]};
             Console.WriteLine(id);
             if (CanMove())
             {
@@ -25,6 +26,10 @@ namespace Dissertation_mk2
             }
             else
                 Console.WriteLine("Can't Move.");
+
+            List<int> endPos = new List<int> { pos[0], pos[1] };
+            board.gameManager.AddMove(new Move(board.gameManager.turnCount, Dissertation_mk2.Move.UnitType.Enemy, startPos, endPos, hasAttacked));
+            hasAttacked = false;
         }
 
         private void CheckMoves()
@@ -34,7 +39,7 @@ namespace Dissertation_mk2
                 if (enemy.hp <= 0) continue;
                 var path = FindPath(pos, enemy.pos);
                 enemyPaths.Add(path.Item1);
-                if (path.Item1.Count < 6 && path.Item2)
+                if (path.Item1.Count < range + 1 && path.Item2)
                 {
                     alliesInRange.Add(enemy.pos);
                     Console.WriteLine("Path to Ally " + enemy.id + ":");

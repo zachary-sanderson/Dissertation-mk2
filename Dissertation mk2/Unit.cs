@@ -14,6 +14,7 @@ namespace Dissertation_mk2
         public Board board;
         public float id;
         public List<int> pos;
+        public bool hasAttacked = false;
         protected readonly int[][] directions = { new[] { 1, 0 }, new[] { 0, -1 }, new[] { 0, 1 }, new[] { -1, 0 } };
 
         public List<List<int>> moves = new List<List<int>>();
@@ -145,8 +146,6 @@ namespace Dissertation_mk2
         {
             int xDiff = Math.Abs(endPos[0] - startPos[0]);
             int yDiff = Math.Abs(endPos[1] - startPos[1]);
-            if (xDiff + yDiff > 100)
-                Console.WriteLine("xDiff:" + xDiff + " yDiff:" + yDiff);
             return xDiff + yDiff;
         }
 

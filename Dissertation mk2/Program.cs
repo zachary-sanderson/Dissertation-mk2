@@ -6,6 +6,7 @@ namespace Dissertation_mk2
     {
         static void Main(string[] args)
         {
+            //_ = new Board();
             _ = new GA();
         }
     }

@@ -26,7 +26,7 @@ namespace Dissertation_mk2
                 cmd.ExecuteNonQuery();
 
                 cmd.CommandText = @"CREATE TABLE " + boardName +
-                                  "(id int identity(1,1) NOT NULL PRIMARY KEY, row INT, column INT, tile FLOAT)";
+                                  "(id int identity(1,1) NOT NULL PRIMARY KEY, row SMALLINT, column SMALLINT, tile FLOAT)";
                 cmd.ExecuteNonQuery();
 
                 for (int i = 0; i < board.Count; i++)
@@ -43,7 +43,7 @@ namespace Dissertation_mk2
                 Console.WriteLine("boards updated");
         }
 
-        public string Get8CharacterRandomString()
+        private static string Get8CharacterRandomString()
         {
             string path = Path.GetRandomFileName();
             path = path.Replace(".", ""); // Remove period.

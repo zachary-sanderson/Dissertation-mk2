@@ -15,18 +15,19 @@ namespace Dissertation_mk2
         public List<List<int>> allyTargetPositions = new List<List<int>>();
 
         //For modelling flow
-        private List<int> anxietyEachTurn = new List<int>();
+        private readonly List<int> anxietyEachTurn = new List<int>();
         public int cSkill;
         private int anxiety;
         private int cDecay = 2;
         private bool noEnemiesNear = true;
 
         //For level ranking
-        private int turnCount;
+        public int turnCount;
         private int enemKilled;
 
         //For GA
-        private Solution currentSolution;
+        private readonly Solution currentSolution;
+        private List<Move> moves = new List<Move>();
 
         /*
         public GameManager(GA geneticAlg, double pValue, int cSkill)
@@ -70,8 +71,8 @@ namespace Dissertation_mk2
                     ally.TakeTurn();
                 }
 
-                Ally[] tempAlly = allies.ToArray();
-                foreach (var ally in tempAlly)
+                Ally[] tempAllies = allies.ToArray();
+                foreach (var ally in tempAllies)
                 {
                     ally.EndTurn();
                 }
@@ -84,8 +85,8 @@ namespace Dissertation_mk2
                     enemy.TakeTurn();
                 }
 
-                Enemy[] tempEnemy = enemies.ToArray();
-                foreach (var enemy in tempEnemy)
+                Enemy[] tempEnemies = enemies.ToArray();
+                foreach (var enemy in tempEnemies)
                 {
                     enemy.EndTurn();
                 }
@@ -126,24 +127,19 @@ namespace Dissertation_mk2
             return builder.ToString();
         }
 
-        public void AddEnemyToList(Enemy script)
+        public void AddMove(Move move)
         {
-            enemies.Add(script);
+            moves.Add(move);
         }
 
-        public void AddAllyToList(Ally script)
+        public void RemoveEnemyFromList(Enemy enemy)
         {
-            allies.Add(script);
+            enemies.Remove(enemy);
         }
 
-        public void RemoveEnemyFromList(Enemy script)
+        public void RemoveAllyFromList(Ally ally)
         {
-            enemies.Remove(script);
-        }
-
-        public void RemoveAllyFromList(Ally script)
-        {
-            allies.Remove(script);
+            allies.Remove(ally);
         }
 
         public bool CheckIfGameOver()
@@ -169,7 +165,7 @@ namespace Dissertation_mk2
         private void StoreData(bool isGameOver)
         {
             List<int> allyHp = allies.Select(ally => ally.hp).ToList();
-            currentSolution.UpdateValues(board.score, turnCount, enemKilled, anxietyEachTurn, allyHp, isGameOver);
+            currentSolution.UpdateValues(board.score, turnCount, enemKilled, anxietyEachTurn, allyHp, moves, isGameOver);
         }
 
         //Called each term to update the anxiety value;

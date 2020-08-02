@@ -22,6 +22,7 @@ namespace Dissertation_mk2
         //Take turn unless checking the anxiety presented by a future turn.
         public void TakeTurn()
         {
+            List<int> startPos = new List<int> { pos[0], pos[1] };
             Console.WriteLine(id);
             if (CanMove())
             {
@@ -30,6 +31,10 @@ namespace Dissertation_mk2
             }
             else
                 Console.WriteLine("Can't Move.");
+
+            List<int> endPos = new List<int> { pos[0], pos[1] };
+            board.gameManager.AddMove(new Move(board.gameManager.turnCount, Dissertation_mk2.Move.UnitType.Ally, startPos, endPos, hasAttacked));
+            hasAttacked = false;
         }
 
         private bool NearGameOver()
@@ -44,8 +49,10 @@ namespace Dissertation_mk2
             foreach (var enemy in board.gameManager.enemies)
             {
                 if (enemy.hp <= 0) continue;
+
                 var path = FindPath(pos, enemy.pos);
                 enemyPaths.Add(path.Item1);
+
                 if (path.Item1.Count < 6 && path.Item2)
                 {
                     Console.WriteLine("Path to Enemy " + enemy.id + ":");
@@ -56,6 +63,7 @@ namespace Dissertation_mk2
                     enemiesInRange.Add(enemy.pos);
                 }
             }
+
             foreach (var item in board.itemPositions)
             {
                 var path = FindPath(pos, item);
@@ -85,6 +93,7 @@ namespace Dissertation_mk2
             bool lowHp = NearGameOver();
             Console.WriteLine("enemies in range:" + enemiesInRange.Count);
             Console.WriteLine("item in range:" + itemsInRange.Count);
+
             if (goalInRange && (board.markov.Aggressive || board.markov.Speedy))
             {
                 SwapPosition(board.goalPos);
@@ -323,6 +332,7 @@ namespace Dissertation_mk2
 
         public void Attack(Enemy unit)
         {
+            hasAttacked = true;
             Console.WriteLine(id + " attacking " + unit.id + ", enemy hp is " + unit.hp);
             if (unit.engaged)
             {

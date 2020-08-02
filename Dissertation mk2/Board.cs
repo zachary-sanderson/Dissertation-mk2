@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Dissertation_mk2
 {
@@ -18,12 +19,16 @@ namespace Dissertation_mk2
                 maximum = max;
             }
         }
-
+        
         public int columns = 25;
         public int rows = 25;
         public Count wallCount = new Count(100, 120);
         public Count itemCount = new Count(4, 4);
         public Count enemyCount = new Count(5, 5);
+
+        private int[][] neighbourPositions = { new[] { 1, 0 }, new[] { -1, 0 },
+            new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 1 }, new[] { 1, -1 },
+            new[] { -1, 1 }, new[] { -1, -1 } };
 
         public GameManager gameManager;
         public Markov markov;
@@ -45,6 +50,14 @@ namespace Dissertation_mk2
         public int numWalls;
         public int numAllies;
         private bool hasGoal;
+
+        /*
+        public Board()
+        {
+            SetupSmoothScene();
+            Console.WriteLine(Builder(board));
+        }
+        */
 
         public Board(double pValue)
         {
@@ -73,7 +86,7 @@ namespace Dissertation_mk2
                 {
                     bool skipPosition = false;
                     List<int> pos = new List<int> {i, j};
-                    if (pos.SequenceEqual(goalPos) ) skipPosition = true;
+                    if (pos.SequenceEqual(goalPos)) skipPosition = true;
                     foreach (var allyPos in allyPositions)
                     {
                         if (allyPos.SequenceEqual(pos))
@@ -119,10 +132,8 @@ namespace Dissertation_mk2
                 new[] { rows - 1, 2 }, new[] { rows - 1, 1 }, new[] { rows - 1, 0 } };
             for (int i = 0; i < allyPositions.Length; i++)
             {
-                Console.WriteLine(positions.Count);
                 List<int> allyPos = new List<int> {allyPositions[i][0], allyPositions[i][1]};
                 positions.Remove(allyPos);
-                Console.WriteLine(positions.Count);
                 float id = 5 + (i + 1f) / 10f;
                 board[allyPos[0]][allyPos[1]] = id;
             }
@@ -143,7 +154,7 @@ namespace Dissertation_mk2
             return 0f;
         }
 
-        public bool ValidateBoard()
+        public bool ValidateBoard(bool isSmooth = false)
         {
             CheckTiles();
             if (!hasGoal)
@@ -154,7 +165,7 @@ namespace Dissertation_mk2
                 return false;
             if (numItems != 4)
                 return false;
-            if (numWalls < 100 || numWalls > 120)
+            if (!isSmooth && (numWalls < wallCount.minimum || numWalls > wallCount.maximum))
                 return false;
 
             bool pathToGoal = false;
@@ -167,12 +178,12 @@ namespace Dissertation_mk2
 
             foreach (var ally in allies)
             {
-                var (path, found) = ally.FindPath(ally.pos, goalPos);
+                var (_, found) = ally.FindPath(ally.pos, goalPos);
                 if (found)
                     pathToGoal = true;
                 for (int i = 0; i < itemPositions.Count; i++)
                 {
-                    var (itemPath, itemFound) = ally.FindPath(ally.pos, itemPositions[i]);
+                    var (_, itemFound) = ally.FindPath(ally.pos, itemPositions[i]);
                     if (itemFound)
                         items[i] = true;
                 }
@@ -214,10 +225,7 @@ namespace Dissertation_mk2
                         case 5:
                             numAllies++;
                             Ally ally = new Ally(this, tile, pos);
-                            if (gameManager != null)
-                                gameManager.AddAllyToList(ally);
-                            else
-                                allies.Add(ally);
+                            allies.Add(ally);
                             break;
 
                     }
@@ -233,14 +241,11 @@ namespace Dissertation_mk2
             for (int i = 0; i < posList.Count; i++)
             {
                 var pos = posList[i];
-                float id = 4.0f + i / 10f;
+                float id = 4.0f + (i+1) / 10f;
                 Enemy enemy = new Enemy(this, id, pos);
                 board[pos[0]][pos[1]] = id;
                 enemyPositions.Add(pos);
-                if (gameManager != null)
-                    gameManager.AddEnemyToList(enemy);
-                else
-                    enemies.Add(enemy);
+                enemies.Add(enemy);
             }
         }
 
@@ -255,6 +260,86 @@ namespace Dissertation_mk2
             LayoutObjectAtRandom(4, enemyCount.minimum, enemyCount.maximum);
             validated = ValidateBoard();
         }
+
+        //*****************************************************************
+        //             TESTING SMOOTH BOARD
+        //*****************************************************************
+        /*
+        public void SetupSmoothScene()
+        {
+            //0=Floor,1=Wall,2=Item,3=goal,4=enemy,5=player
+            BoardSetup();
+            InitialiseAllies();
+            board[goalPos[0]][goalPos[1]] = 3;
+            LayoutObjectAtRandom(1, wallCount.minimum, wallCount.maximum);
+            SmoothBoard();
+            LayoutObjectAtRandom(2, itemCount.minimum, itemCount.maximum);
+            LayoutObjectAtRandom(4, enemyCount.minimum, enemyCount.maximum);
+            validated = ValidateBoard(true);
+            Console.WriteLine(validated);
+        }
+
+        private void SmoothBoard()
+        {
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    int tile = (int)board[i][j];
+                    switch (tile)
+                    {
+                        case 0:
+                            Smooth(false, i, j);
+                            break;
+                        case 1:
+                            Smooth(true, i, j);
+                            break;
+                    }
+                }
+            }
+        }
+
+        private void Smooth(bool isWall, int i, int j)
+        {
+            var count = CheckNeighbours(i, j);
+            if (isWall)
+            {
+                if (count < 2) board[i][j] = 0;
+            }
+            else
+            {
+                if (count <= 4) return;
+                board[i][j] = 1;
+                positions.Remove(new List<int> { i, j });
+            }
+        }
+
+        private int CheckNeighbours(int i, int j)
+        {
+            int count = 0;
+            foreach (var position in neighbourPositions)
+            {
+                var newPos = new List<int> { i + position[0], j + position[1] };
+                if (OutOfRange(newPos)) count++;
+                else if ((int)board[newPos[0]][newPos[1]] == 1) count++;
+            }
+            return count;
+        }
+
+        private static string Builder(IEnumerable<List<float>> board)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var row in board)
+            {
+                foreach (var tile in row)
+                {
+                    builder.Append(tile + " ");
+                }
+                builder.AppendLine();
+            }
+            return builder.ToString();
+        }
+        */
     }
 
 }
