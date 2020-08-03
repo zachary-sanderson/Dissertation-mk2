@@ -22,8 +22,8 @@ namespace Dissertation_mk2
         private bool noEnemiesNear = true;
 
         //For level ranking
-        public int turnCount;
-        private int enemKilled;
+        public int TurnCount;
+        public int EnemiesKilled { get; private set; }
 
         //For GA
         private readonly Solution currentSolution;
@@ -49,9 +49,8 @@ namespace Dissertation_mk2
             Console.WriteLine("Ally Count " + allies.Count);
             while (!gameOver)
             {
-                turnCount++;
-                if (cSkill > 0)
-                    allies = allies.OrderByDescending(ally => ally.hp).ToList();
+                TurnCount++;
+                allies = allies.OrderByDescending(ally => ally.hp).ToList();
                 foreach (var ally in allies.Where(ally => !ally.isDead))
                 {
                     if (gameOver) continue;
@@ -86,7 +85,7 @@ namespace Dissertation_mk2
                     continue;
                 UpdateAnxiety();
                 Console.WriteLine(anxiety);
-                if (turnCount % 5 == 0)
+                if (TurnCount % 5 == 0)
                     board.markov.Transition();
                 noEnemiesNear = true;
                 if (50 < anxiety || anxiety < -50)
@@ -153,7 +152,7 @@ namespace Dissertation_mk2
         private void StoreData(bool isGameOver)
         {
             List<int> allyHp = allies.Select(ally => ally.hp).ToList();
-            currentSolution.UpdateValues(board.score, turnCount, enemKilled, anxietyEachTurn, allyHp, moves, isGameOver);
+            currentSolution.UpdateValues(board.score, TurnCount, EnemiesKilled, anxietyEachTurn, allyHp, moves, isGameOver);
         }
 
         //Called each term to update the anxiety value;
@@ -206,7 +205,7 @@ namespace Dissertation_mk2
         public void EnemyDead(Enemy enemy)
         {
             enemy.isDead = true;
-            enemKilled++;
+            EnemiesKilled++;
             anxiety -= 3;
         }
     }

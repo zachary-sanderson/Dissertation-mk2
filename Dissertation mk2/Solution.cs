@@ -66,7 +66,7 @@ namespace Dissertation_mk2
             averageAnxiety = anxietyEachTurn.Sum();
             averageFlow = (double) anxietyEachTurn.Sum(Math.Abs) / anxietyEachTurn.Count;
             Console.WriteLine("Anxieties: " + IntBuilder(anxietyEachTurn));
-            Console.WriteLine("Average anxiety: " + averageAnxiety);
+            Console.WriteLine("Cumulative anxiety: " + averageAnxiety);
             Console.WriteLine("Average Distance from flow: " + averageFlow);
             Console.WriteLine("Personality: " + Personality);
             Console.WriteLine("Hp: " + IntBuilder(allyHp));

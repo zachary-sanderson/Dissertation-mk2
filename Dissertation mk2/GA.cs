@@ -29,10 +29,9 @@ namespace Dissertation_mk2
         public GA()
         {
             int iter = 0;
-            var personalityFLagsList = new List<List<double>>();
             //Random rand = new Random();
             //double pValue = rand.NextDouble();
-            double pValue = 0d;
+            double pValue = 0.5d;
             List<int> numTurns = new List<int>();
             while (iter < NumGenerations)
             {
@@ -52,8 +51,6 @@ namespace Dissertation_mk2
 
                 iter++;
 
-                List<double> personalityFlags = new List<double>();
-                
                 foreach (var solution in feasible)
                 {
                     if (solution.averageFlow < bestFlow && !solution.wasGameOver)
@@ -62,18 +59,13 @@ namespace Dissertation_mk2
                         bestSolution = solution;
                     }
                     numTurns.Add(solution.numTurns);
-
-                    
-
-                    if (solution.enemKilled == 5) personalityFlags.Add(0.5d);
-
-                    if (solution.numTurns < 14) personalityFlags.Add(0d);
-
-                    if (solution.score == solution.numItems) personalityFlags.Add(1d);
                 }
-                personalityFLagsList.Add(personalityFlags);
 
-                Console.WriteLine("Best average flow at " + NumGenerations + " generations: " + bestFlow);
+                Console.WriteLine("Best average flow at " + iter + " generations: " + bestFlow);
+                Console.WriteLine("Best board:");
+                Console.WriteLine(Builder(bestSolution.initialBoard));
+                Console.WriteLine("num enemies:"+ bestSolution.numEnemies);
+                Console.WriteLine("num items:" + bestSolution.numItems);
 
                 CrossoverFeasible(pValue);
 
@@ -85,15 +77,14 @@ namespace Dissertation_mk2
             Console.WriteLine("Best Flow: " + bestFlow);
             Console.WriteLine(Builder(bestSolution.initialBoard));
 
-            EstimatePersonality(personalityFLagsList);
+            //EstimatePersonality(personalityFLagsList);
 
-            /*
             var finalBoard = new Board(bestSolution.initialBoard, pValue);
             var finalSolution = new Solution(finalBoard, finalBoard.markov.Personality, pValue, finalBoard.numItems,
                 finalBoard.numEnemies);
-            var finalGM = new GameManager(this, finalSolution, 0);
+            var finalGM = new GameManager(finalSolution, 0);
             finalGM.PlayGame();
-            */
+            /*
             Console.WriteLine("Average num turns: " + (double)numTurns.Sum()/numTurns.Count);
             foreach (var move in bestSolution.moves)
             {
@@ -101,6 +92,7 @@ namespace Dissertation_mk2
                 attacked = move.Attack ? "attacks." : "doesn't attack.";
                 Console.WriteLine("turn:" + move.TurnNum + "  " + move.Type + " moves from " + move.StartPos[0] + " " + move.StartPos[1] + " to " + move.EndPos[0] + " " + move.EndPos[1] + " and " + attacked);
             }
+            */
         }
 
         private void CrossoverFeasible(double pValue)
@@ -158,9 +150,9 @@ namespace Dissertation_mk2
             Console.WriteLine("num enemies = " + newBoard.numEnemies);
             Console.WriteLine("num items = " + newBoard.numItems);
             Console.WriteLine("num walls = " + newBoard.numWalls);
-            if (newBoard.validated)
+            if (newBoard.validated && newBoard.CheckForGoal())
                 feasible.Add(new Solution(newBoard, newBoard.markov.Personality, pValue, newBoard.numItems, newBoard.numEnemies));
-            else
+            else if (newBoard.CheckForGoal())
                 Infeasible.Add(newBoard);
         }
 

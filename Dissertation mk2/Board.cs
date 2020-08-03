@@ -45,11 +45,11 @@ namespace Dissertation_mk2
         public int score = 0;
         public int itemValue = 1;
 
-        public int numItems;
-        public int numEnemies;
-        public int numWalls;
-        public int numAllies;
-        private bool hasGoal;
+        public int numItems = 0;
+        public int numEnemies = 0;
+        public int numWalls = 0;
+        public int numAllies = 0;
+        private bool hasGoal = false;
 
         /*
         public Board()
@@ -67,9 +67,11 @@ namespace Dissertation_mk2
 
         public Board(List<List<float>> board, double pValue)
         {
+            validated = false;
             this.board = board;
             markov = new Markov(pValue);
             goalPos.Add(0); goalPos.Add(columns - 1);
+            Console.WriteLine(Builder(board));
             validated = ValidateBoard();
         }
 
@@ -157,7 +159,7 @@ namespace Dissertation_mk2
         public bool ValidateBoard(bool isSmooth = false)
         {
             CheckTiles();
-            if (!hasGoal)
+            if (!CheckForGoal())
                 return false;
             if (numAllies != 5)
                 return false;
@@ -170,6 +172,8 @@ namespace Dissertation_mk2
 
             bool pathToGoal = false;
             bool[] items = new bool[numItems];
+            bool[] enemyBools = new bool[numEnemies];
+
 
             foreach (var pos in enemyPositions)
             {
@@ -180,12 +184,22 @@ namespace Dissertation_mk2
             {
                 var (_, found) = ally.FindPath(ally.pos, goalPos);
                 if (found)
+                {
+                    Console.WriteLine("path to goal found");
                     pathToGoal = true;
+                }
+
                 for (int i = 0; i < itemPositions.Count; i++)
                 {
                     var (_, itemFound) = ally.FindPath(ally.pos, itemPositions[i]);
                     if (itemFound)
                         items[i] = true;
+                }
+                for (int i = 0; i < enemyPositions.Count; i++)
+                {
+                    var (_, enemyFound) = ally.FindPath(ally.pos, enemyPositions[i]);
+                    if (enemyFound)
+                        enemyBools[i] = true;
                 }
             }
 
@@ -194,7 +208,7 @@ namespace Dissertation_mk2
                 board[enemy.pos[0]][enemy.pos[1]] = enemy.id;
             }
 
-            return pathToGoal && items.All(pathToItem => pathToItem);
+            return pathToGoal && items.All(pathToItem => pathToItem) && enemyBools.All(pathToEnemy => pathToEnemy);
         }
 
         private void CheckTiles()
@@ -206,7 +220,7 @@ namespace Dissertation_mk2
                 {
                     List<int> pos = new List<int> { i, j };
                     float tile = CheckPosition(pos);
-                    switch ((int)tile)
+                    switch ((int)Math.Floor(tile))
                     {
                         case 1:
                             numWalls++;
@@ -325,7 +339,7 @@ namespace Dissertation_mk2
             }
             return count;
         }
-
+        */
         private static string Builder(IEnumerable<List<float>> board)
         {
             StringBuilder builder = new StringBuilder();
@@ -339,7 +353,11 @@ namespace Dissertation_mk2
             }
             return builder.ToString();
         }
-        */
+
+        public bool CheckForGoal()
+        {
+            return (int)board[0][columns-1] == 3;
+        }
     }
 
 }

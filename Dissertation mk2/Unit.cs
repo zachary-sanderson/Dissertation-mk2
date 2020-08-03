@@ -55,10 +55,11 @@ namespace Dissertation_mk2
         //A* algorithm designed to work for a matrix
         public (List<List<int>>, bool) FindPath(List<int> startPos, List<int> targetPos)
         {
-            var (target, reachable) = FindReachable(targetPos);
+            /*var (target, reachable) = FindReachable(targetPos);
             if (reachable == false)
                 Console.WriteLine(targetPos[0] + " " + targetPos[1] + " is unreachable");
             targetPos = target ?? startPos;
+            */
             Node currentNode = new Node(startPos, 0, CheckDistance(startPos, targetPos), null, true);
             List<Node> closedList = new List<Node>();
             List<Node> openList = new List<Node> { currentNode };
@@ -73,13 +74,15 @@ namespace Dissertation_mk2
 
                 foreach (int[] direction in directions)
                 {
+                    if (targetFound) continue;
+
                     List<int> move = currentPos.Select((t, i) => t + direction[i]).ToList();
 
-                    if (board.rows - 1 < move[0] || move[0] < 0 || board.columns - 1 < move[1] || move[1] < 0) continue;
+                    if (board.OutOfRange(move)) continue;
 
                     Node node = new Node(move, currentNode.G + 1, CheckDistance(move, targetPos), currentNode);
 
-                    if (move.SequenceEqual(targetPos) || targetFound)
+                    if (move.SequenceEqual(targetPos))
                     {
                         targetFound = true;
                         if (board.CheckPosition(move) == 0)
@@ -162,7 +165,7 @@ namespace Dissertation_mk2
         }
 
         /*If intended target for A* is unreachable uses another
-         reachable node close to the target instead*/
+         reachable node close to the target instead
         private (List<int>, bool) FindReachable(List<int> targetPos)
         {
             bool reachable = false;
@@ -203,6 +206,6 @@ namespace Dissertation_mk2
 
             return (move, false);
         }
-
+        */
     }
 }

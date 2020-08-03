@@ -28,7 +28,7 @@ namespace Dissertation_mk2
                 Console.WriteLine("Can't Move.");
 
             List<int> endPos = new List<int> { pos[0], pos[1] };
-            board.gameManager.AddMove(new Move(board.gameManager.turnCount, Dissertation_mk2.Move.UnitType.Enemy, startPos, endPos, hasAttacked));
+            board.gameManager.AddMove(new Move(board.gameManager.TurnCount, Dissertation_mk2.Move.UnitType.Enemy, startPos, endPos, hasAttacked));
             hasAttacked = false;
         }
 

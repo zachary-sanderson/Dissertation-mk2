@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Dissertation_mk2
@@ -6,9 +7,9 @@ namespace Dissertation_mk2
     public class Markov
     {
         private readonly Random rand = new Random();
-        public bool Aggressive;
-        public bool Explorer;
-        public bool Speedy;
+        public bool Spread;
+        public bool PrioritiseEnemies;
+        public bool GroupUp;
         public string Personality;
 
         private double[][] matrix;
@@ -24,63 +25,64 @@ namespace Dissertation_mk2
             
             if (p < 1/(double)3)
             {
-                SetSpeedy(p);
+                SetSpread(p);
             }
             else if (p < 2/(double)3)
             {
-                SetAggressive(p);
+                SetPrioritiseEnemies(p);
             }
             else
             {
-                SetExplorer(p);
+                SetGroupUp(p);
             }
             PrintMatrix();
         }
 
-        private void SetSpeedy(double p)
+        private void SetPrioritiseEnemies(double p)
+        {
+
+            double prob = 0.5 - p;
+            double[] line1 = { 0.5 + prob, FiveSixths + (prob / 3), 1 };
+            double[] line2 = { Third - (p / 3), 1 - (p / 3), 1 };
+            double[] line3 = { OneSixth + (prob / 3), 0.5 + prob, 1 };
+            matrix = new[] { line1, line2, line3 };
+            PrioritiseEnemies = true;
+            Personality = "PrioritiseEnemies";
+            Console.WriteLine("PrioritiseEnemies");
+        }
+
+        private void SetSpread(double p)
         {
             double prob = ((1 / (double)6) - p);
             double[] line1 = { FiveSixths + prob, 1 - (p / 2), 1 };
             double[] line2 = { Third + prob, 1 - p, 1 };
             double[] line3 = { Third - p, 0.5 + prob, 1 };
             matrix = new[] { line1, line2, line3 };
-            Speedy = true;
-            Personality = "Speedy";
-            Console.WriteLine("Speedy");
+            Spread = true;
+            Personality = "Spread";
+            Console.WriteLine("Spread");
         }
 
-        private void SetAggressive(double p)
-        {
-            double prob = 0.5 - p;
-            double[] line1 = { 0.5 + prob, FiveSixths + (prob / 3), 1 };
-            double[] line2 = { Third - (p / 3), 1 - (p / 3), 1 };
-            double[] line3 = { OneSixth + (prob / 3), 0.5 + prob, 1 };
-            matrix = new[] { line1, line2, line3 };
-            Aggressive = true;
-            Personality = "Aggressive";
-            Console.WriteLine("Aggressive");
-        }
-
-        private void SetExplorer(double p)
+        private void SetGroupUp(double p)
         {
             double prob = ((5 / (double)6) - p);
             double[] line1 = { Third + (1 - p), TwoThirds + prob, 1 };
             double[] line2 = { 1 - p, TwoThirds + prob, 1 };
             double[] line3 = { (1 - p) / 2, OneSixth + prob, 1 };
             matrix = new[] { line1, line2, line3 };
-            Explorer = true;
-            Personality = "Explorer";
-            Console.WriteLine("Explorer");
+            GroupUp = true;
+            Personality = "GroupUp";
+            Console.WriteLine("GroupUp");
         }
 
         public void Transition()
         {
             double transition = rand.NextDouble();
-            if (Speedy)
+            if (PrioritiseEnemies)
             {
                 CheckTransition(transition, 0);
             }
-            else if (Aggressive)
+            else if (Spread)
             {
                 CheckTransition(transition, 1);
             }
@@ -106,22 +108,22 @@ namespace Dissertation_mk2
             switch (i)
             {
                 case 0:
-                    Speedy = true;
-                    Aggressive = false;
-                    Explorer = false;
-                    Console.WriteLine("Speedy");
+                    Spread = true;
+                    PrioritiseEnemies = false;
+                    GroupUp = false;
+                    Console.WriteLine("PrioritiseEnemies");
                     break;
                 case 1:
-                    Speedy = false;
-                    Aggressive = true;
-                    Explorer = false;
-                    Console.WriteLine("Aggressive");
+                    Spread = false;
+                    PrioritiseEnemies = true;
+                    GroupUp = false;
+                    Console.WriteLine("Spread");
                     break;
                 default:
-                    Speedy = false;
-                    Aggressive = false;
-                    Explorer = true;
-                    Console.WriteLine("Explorer");
+                    Spread = false;
+                    PrioritiseEnemies = false;
+                    GroupUp = true;
+                    Console.WriteLine("GroupUp");
                     break;
             }
         }
@@ -131,7 +133,7 @@ namespace Dissertation_mk2
             Console.WriteLine(Builder(matrix));
         }
 
-        private static string Builder(double[][] matrix)
+        private static string Builder(IEnumerable<double[]> matrix)
         {
             StringBuilder builder = new StringBuilder();
             foreach (var line in matrix)
