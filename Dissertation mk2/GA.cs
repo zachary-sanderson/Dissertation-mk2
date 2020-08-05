@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 
@@ -10,15 +12,23 @@ namespace Dissertation_mk2
     {
         private const int Rows = 25;
         private const int Columns = 25;
+        private const int WallCountMin = 100;
+        private const int WallCountMax = 140;
+        private const int ItemCountMin = 4;
+        private const int ItemCountMax = 4;
+        private const int EnemyCountMin = 5;
+        private const int EnemyCountMax = 5;
+
+
         public List<List<int>> Positions = new List<List<int>>();
 
-        private readonly List<Solution> feasible = new List<Solution>();
+        private List<Solution> feasible = new List<Solution>();
 
-        public List<Board> Infeasible = new List<Board>();
+        private List<Board> Infeasible = new List<Board>();
 
 
         private const int NumGenerations = 10;
-        private const int NumParents = 30;
+        private const int NumParents = 50;
         private const int MaxInfeasible = 50;
         private const float MutationRate = 0.01f;
 
@@ -26,27 +36,37 @@ namespace Dissertation_mk2
         private readonly double bestFlow = 1000;
         private double finalPersonalityEstimate;
 
+        private int iter;
+
+
+
+        //Temp
+        int[][] allyPositions = { new[] { Rows - 3, 0 }, new[] { Rows - 2, 0 },
+            new[] { Rows - 1, 2 }, new[] { Rows - 1, 1 }, new[] { Rows - 1, 0 } };
+
+
+
         public GA()
         {
-            int iter = 0;
             //Random rand = new Random();
             //double pValue = rand.NextDouble();
-            double pValue = 0.5d;
+            double pValue = 0d;
             List<int> numTurns = new List<int>();
+
+            while (feasible.Count < NumParents)
+            {
+                Board newBoard = new Board(pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this);
+                IsFeasible(newBoard, pValue);
+            }
+            List<double> bestFlowEachTurn = new List<double>();
+            List<int> numFeasiblePerGen = new List<int>();
             while (iter < NumGenerations)
             {
-                InitialiseGridPositions();
-                
-                
-                while (feasible.Count < NumParents)
+                numFeasiblePerGen.Add(feasible.Count);
+                foreach (var solution in feasible)
                 {
-                    Board newBoard = new Board(pValue);
-                    IsFeasible(newBoard, pValue);
-                }
-
-                foreach (var gameManager in feasible.Select(solution => new GameManager(solution, 0)))
-                {
-                    gameManager.PlayGame();
+                    GameManager gm = new GameManager(solution, 0, this, iter);
+                    gm.PlayGame();
                 }
 
                 iter++;
@@ -56,7 +76,9 @@ namespace Dissertation_mk2
                     if (solution.averageFlow < bestFlow && !solution.wasGameOver)
                     {
                         bestFlow = Math.Abs(solution.averageFlow);
-                        bestSolution = solution;
+                        bestSolution = new Solution(solution);
+                        Console.WriteLine(bestFlow);
+                        Console.WriteLine(Builder(bestSolution.initialBoard));
                     }
                     numTurns.Add(solution.numTurns);
                 }
@@ -67,9 +89,13 @@ namespace Dissertation_mk2
                 Console.WriteLine("num enemies:"+ bestSolution.numEnemies);
                 Console.WriteLine("num items:" + bestSolution.numItems);
 
+                bestFlowEachTurn.Add(bestFlow);
+
+                if (iter == NumGenerations) continue;
+
                 CrossoverFeasible(pValue);
 
-                CrossoverInfeasible(pValue);
+                CrossoverInfeasible(pValue, iter);
 
                 Console.WriteLine("Feasible Count: " + feasible.Count);
                 Console.WriteLine("Infeasible Count: " + Infeasible.Count);
@@ -77,13 +103,18 @@ namespace Dissertation_mk2
             Console.WriteLine("Best Flow: " + bestFlow);
             Console.WriteLine(Builder(bestSolution.initialBoard));
 
-            //EstimatePersonality(personalityFLagsList);
-
-            var finalBoard = new Board(bestSolution.initialBoard, pValue);
+            //EstimatePersonality(personalityFLagsList);;
+            var finalBoard = new Board(bestSolution.initialBoard, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this);
             var finalSolution = new Solution(finalBoard, finalBoard.markov.Personality, pValue, finalBoard.numItems,
-                finalBoard.numEnemies);
-            var finalGM = new GameManager(finalSolution, 0);
+                finalBoard.numEnemies, this);
+            var finalGM = new GameManager(finalSolution, 0, this, 10);
             finalGM.PlayGame();
+
+            for(int i = 0; i < NumGenerations; i++)
+            {
+                Console.WriteLine("num Feasible: " + numFeasiblePerGen[i]);
+                Console.WriteLine(bestFlowEachTurn[i]);
+            }
             /*
             Console.WriteLine("Average num turns: " + (double)numTurns.Sum()/numTurns.Count);
             foreach (var move in bestSolution.moves)
@@ -95,24 +126,94 @@ namespace Dissertation_mk2
             */
         }
 
+        public void BugTest()
+        {
+            if (feasible.Count == 0) return;
+            foreach (var board in feasible)
+            {
+                ExtraBugTest(board.initialBoard);
+            }
+
+            if (Infeasible.Count == 0) return;
+
+
+            foreach (var board in Infeasible)
+            {
+                foreach (var solution in feasible)
+                {
+                    if (ReferenceEquals(board, solution.boardObj))
+                    {
+                        Console.WriteLine("BUG HERE");
+                    }
+
+                    if (board.Equals(solution.boardObj))
+                    {
+                        Console.WriteLine("BUG HERE");
+                        Console.WriteLine("INFEASIBLE   NUMITEMS:" + board.numItems + " NUMENEMIES:" + board.numEnemies + " VALIDATED:" + board.validated);
+                        Console.WriteLine(Builder(board.board));
+                        Console.WriteLine("FEASIBLE     NUMITEMS:" + solution.numItems + " NUMENEMIES:" + solution.numEnemies + " VALIDATED:" + solution.boardObj.validated);
+                        Console.WriteLine(Builder(solution.boardObj.board));
+                        Console.WriteLine("FEASIBLE INITIAL BOARD");
+                        Console.WriteLine(Builder(solution.initialBoard));
+                        ExtraBugTest(board.board);
+                    }
+                }
+            }
+        }
+
+        public void ExtraBugTest(List<List<int>> board, bool infeasible = false)
+        {
+            int numItems = 0;
+            int numEnemies = 0;
+            int numWalls = 0;
+            foreach (var tile in board.SelectMany(row => row))
+            {
+                switch (tile)
+                {
+                    case 4:
+                        numEnemies++;
+                        break;
+                    case 2:
+                        numItems++;
+                        break;
+                    case 1:
+                        numWalls++;
+                        break;
+                }
+            }
+
+            if ((numItems != ItemCountMax || numEnemies != EnemyCountMax || WallCountMin > numWalls || WallCountMax < numWalls) && !infeasible)
+            {
+                Console.WriteLine("BUG HERE");
+                Console.WriteLine(Builder(board));
+            }
+            /*
+            else if (infeasible && numItems == ItemCountMax && numEnemies == EnemyCountMax && numWalls > WallCountMin && numWalls < WallCountMax)
+            {
+                Console.WriteLine("BUG HERE");
+                Console.WriteLine(Builder(board));
+            }
+            */
+        }
+
         private void CrossoverFeasible(double pValue)
         {
             var parents = ChooseParents(feasible);
             feasible.Clear();
-
             for (int i = 1; i < parents.Count; i += 2)
             {
-                var children = Crossover(parents[i - 1].initialBoard, parents[i].initialBoard);
-                foreach (var newBoard in children.Select(child => new Board(child, pValue)))
-                {
+                var children = Crossover(parents[i - 1].initialBoard.AsReadOnly(), parents[i].initialBoard.AsReadOnly());
+                foreach (var newBoard in children.Select(child => new Board(child, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this)))
+                { ;
                     IsFeasible(newBoard, pValue);
                 }
             }
         }
 
         //maybe add selective breeding to this too
-        private void CrossoverInfeasible(double pValue)
+        private void CrossoverInfeasible(double pValue, int iter)
         {
+
             int max;
             if (Infeasible.Count % 2 == 0)
                 max = Infeasible.Count;
@@ -123,10 +224,17 @@ namespace Dissertation_mk2
             {
                 var parents = ChooseInfeasibleParents();
                 Infeasible.Clear();
+                foreach (var parent in parents)
+                {
+                    if (parent.board[0][Columns -1] != 3)
+                    {
+                        Console.WriteLine(Builder(parent.board));
+                    }
+                }
                 for (int i = 1; i < MaxInfeasible; i += 2)
                 {
-                    var children = Crossover(parents[i - 1].board, parents[i].board);
-                    foreach (var newBoard in children.Select(child => new Board(child, pValue)))
+                    var children = Crossover(parents[i - 1].board.AsReadOnly(), parents[i].board.AsReadOnly());
+                    foreach (var newBoard in children.Select(child => new Board(child, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this)))
                     {
                         IsFeasible(newBoard, pValue);
                     }
@@ -134,13 +242,16 @@ namespace Dissertation_mk2
             }
             else
             {
+                List<List<List<int>>> children = new List<List<List<int>>>();
                 for (int i = 1; i < max; i += 2)
                 {
-                    var children = Crossover(Infeasible[i - 1].board, Infeasible[i].board);
-                    foreach (var newBoard in children.Select(child => new Board(child, pValue)))
-                    {
-                        IsFeasible(newBoard, pValue);
-                    }
+                    var childrenToAdd = Crossover(Infeasible[i - 1].board.AsReadOnly(), Infeasible[i].board.AsReadOnly());
+                    children.AddRange(childrenToAdd);
+                }
+                Infeasible.Clear();
+                foreach (var newBoard in children.Select(child => new Board(child, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this)))
+                {
+                    IsFeasible(newBoard, pValue);
                 }
             }
         }
@@ -150,10 +261,18 @@ namespace Dissertation_mk2
             Console.WriteLine("num enemies = " + newBoard.numEnemies);
             Console.WriteLine("num items = " + newBoard.numItems);
             Console.WriteLine("num walls = " + newBoard.numWalls);
-            if (newBoard.validated && newBoard.CheckForGoal())
-                feasible.Add(new Solution(newBoard, newBoard.markov.Personality, pValue, newBoard.numItems, newBoard.numEnemies));
-            else if (newBoard.CheckForGoal())
-                Infeasible.Add(newBoard);
+            Console.WriteLine(Builder(newBoard.board));
+            List<List<int>> copyNewBoard = new List<List<int>>(newBoard.board);
+            Board copy = new Board(copyNewBoard, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this);
+            if (copy.validated)
+            {
+                feasible.Add(new Solution(copy, newBoard.markov.Personality, pValue, newBoard.numItems,
+                    newBoard.numEnemies, this));
+            }
+            else
+            {
+                Infeasible.Add(copy);
+            }
         }
 
         private void InitialiseGridPositions()
@@ -177,69 +296,86 @@ namespace Dissertation_mk2
             return pos;
         }
 
-        private void Mutate(List<List<float>> board)
+        private void Mutate(List<List<int>> board)
         {
+            Positions.Clear();
+            InitialiseGridPositions();
             var pos = RandomPosition();
             Random rand = new  Random();
             var tile = rand.NextDouble();
             if (tile < 0.25) board[pos[0]][pos[1]] = 0;
             else if (tile < 0.5) board[pos[0]][pos[1]] = 1;
             else if (tile < 0.75) board[pos[0]][pos[1]] = 2;
-            else board[pos[0]][pos[1]] = 4.5f;
+            else board[pos[0]][pos[1]] = 4;
         }
 
-        private List<List<List<float>>> Crossover(List<List<float>> first, List<List<float>> second)
+        private List<List<List<int>>> Crossover(IReadOnlyList<List<int>> first, IReadOnlyCollection<List<int>> second)
         {
-            List<List<List<float>>> newBoards = new List<List<List<float>>>();
+            List<List<List<int>>> newBoards = new List<List<List<int>>>();
 
             Console.WriteLine("FIRST");
             Console.WriteLine(Builder(first));
             Console.WriteLine("second");
             Console.WriteLine(Builder(second));
             Random rand = new Random();
-            int row = rand.Next(5);
-            int col = rand.Next(5);
+            int row = rand.Next(Rows/5);
+            int col = rand.Next(Columns/5);
+
+            var localFirst = CopyBoard(first);
+            var localSecond = CopyBoard(second);
 
             for (int i = row * 5; i < (row + 1) * 5; i++)
             {
                 for (int j = col * 5; j < (col + 1) * 5; j++)
                 {
                     Console.WriteLine(first[i].Count);
-                    var temp = first[i][j];
-                    first[i][j] = second[i][j];
-                    second[i][j] = temp;
+                    var temp = localFirst[i][j];
+                    localFirst[i][j] = localSecond[i][j];
+                    localSecond[i][j] = temp;
                 }
             }
 
-            newBoards.Add(first);
-            newBoards.Add(second);
             Console.WriteLine("FIRST AFTER");
-            Console.WriteLine(Builder(first));
+            Console.WriteLine(Builder(localFirst));
             Console.WriteLine("second AFTER");
-            Console.WriteLine(Builder(second));
+            Console.WriteLine(Builder(localSecond));
 
             double mutate = rand.NextDouble();
             if (mutate < MutationRate)
             {
-                Mutate(first);
+                Mutate(localFirst);
                 Console.WriteLine("FIRST MUTATE");
-                Console.WriteLine(Builder(first));
+                Console.WriteLine(Builder(localFirst));
             }
 
             mutate = rand.NextDouble();
             if (mutate < MutationRate)
             {
-                Mutate(second);
+                Mutate(localSecond);
                 Console.WriteLine("SECOND MUTATE");
-                Console.WriteLine(Builder(second));
+                Console.WriteLine(Builder(localSecond));
             }
+
+            List<List<int>> newFirst = new List<List<int>>(localFirst);
+            List<List<int>> newSecond = new List<List<int>>(localSecond);
+
+            newBoards.Add(newFirst);
+            newBoards.Add(newSecond);
 
             return newBoards;
         }
 
 
-        
-        
+        private List<List<int>> CopyBoard(IEnumerable<List<int>> initial)
+        {
+            var board = new List<List<int>>();
+            foreach (var initialRow in initial.Select(row => row.ToList()))
+            {
+                board.Add(initialRow);
+            }
+            return board; 
+        }
+
         //FOR FEASIBLE
         private static List<Solution> ChooseParents(List<Solution> solutions)
         {
@@ -294,7 +430,14 @@ namespace Dissertation_mk2
                 {
                     cumProb += probabilities[i];
                     if (prob < cumProb)
+                    {
+                        if (Infeasible[i].board[0][Columns-1] != 3)
+                        {
+                            Console.WriteLine(Builder(Infeasible[i].board));
+                        }
+
                         parents.Add(Infeasible[i]);
+                    }
                 }
             }
 
@@ -320,13 +463,13 @@ namespace Dissertation_mk2
             List<int> fitness = new List<int>();
             foreach (var board in Infeasible)
             {
-                var enem = Math.Abs(5 - board.numEnemies) * 5;
-                var item = Math.Abs(4 - board.numItems) * 5;
+                var enem = Math.Abs(EnemyCountMax - board.numEnemies) * 5;
+                var item = Math.Abs(ItemCountMax - board.numItems) * 5;
                 int walls = 0;
-                if (board.numWalls < 100)
-                    walls = 100 - board.numWalls;
-                else if (board.numWalls > 120)
-                    walls = board.numWalls - 120;
+                if (board.numWalls < WallCountMin)
+                    walls = WallCountMin - board.numWalls;
+                else if (board.numWalls > WallCountMax)
+                    walls = board.numWalls - WallCountMax;
                 fitness.Add(enem + item + walls);
             }
 
@@ -355,10 +498,9 @@ namespace Dissertation_mk2
             Console.WriteLine("Final Personality Estimate: " + finalPersonalityEstimate);
         }
 
-        private static string Builder(IEnumerable<List<float>> board)
+        private static string Builder(IEnumerable<List<int>> board)
         {
-            var enumerable = board as List<float>[] ?? board.ToArray();
-            Console.WriteLine(enumerable.Count());
+            var enumerable = board as List<int>[] ?? board.ToArray();
             StringBuilder builder = new StringBuilder();
             foreach (var row in enumerable)
             {

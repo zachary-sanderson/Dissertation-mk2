@@ -24,6 +24,8 @@ namespace Dissertation_mk2
         public bool goalInRange;
         public bool isDead = false;
 
+        protected GA ga;
+
         protected bool CanMove()
         {
             bool canMove = false;
@@ -96,10 +98,9 @@ namespace Dissertation_mk2
 
                     if (node.IsInOpenList(openList)) continue;
 
-                    float tile = board.CheckPosition(move);
-                    int roundedTile = (int) Math.Floor(tile);
+                    var tile = board.CheckPosition(move);
 
-                    if (roundedTile == 0 || roundedTile == 2)
+                    if (tile == 0 || tile == 2)
                         openList.Add(node);
                 }
 
@@ -157,8 +158,9 @@ namespace Dissertation_mk2
             if (CheckDistance(pos, move) < range + 1)
             {
                 Console.WriteLine("Moving from: " + pos[0] + " " + pos[1] + " to:" + move[0] + " " + move[1]);
-                board.board[pos[0]][pos[1]] = 0;
-                board.board[move[0]][move[1]] = id;
+                board.UpdateTile(pos, 0);
+                int newTile = (int) id;
+                board.UpdateTile(move, newTile);
                 pos[0] = move[0];
                 pos[1] = move[1];
             }

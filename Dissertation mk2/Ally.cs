@@ -21,8 +21,9 @@ namespace Dissertation_mk2
 
 
 
-        public void TakeTurn()
+        public void TakeTurn(GA ga)
         {
+            this.ga = ga;
             List<int> startPos = new List<int> { pos[0], pos[1] };
             Console.WriteLine(id);
             if (CanMove())
@@ -181,12 +182,14 @@ namespace Dissertation_mk2
         protected Enemy FindTarget()
         {
             List<Enemy> targets = new List<Enemy>();
-            List<float> enemyIds = enemiesInRange.Select(position => board.CheckPosition(position)).ToList();
 
-            targets.AddRange(from id in enemyIds
-                from unit in board.gameManager.enemies
-                where id == unit.id
-                select unit);
+            foreach (var enemyPos in enemiesInRange)
+            {
+                foreach (var enemy in board.gameManager.enemies)
+                {
+                    if(enemyPos.SequenceEqual(enemy.pos)) targets.Add(enemy);
+                }
+            }
 
             return LowestHp(targets);
         }

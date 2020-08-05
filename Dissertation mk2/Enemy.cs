@@ -15,8 +15,9 @@ namespace Dissertation_mk2
             this.pos = pos;
         }
 
-        public void TakeTurn()
+        public void TakeTurn(GA ga)
         {
+            this.ga = ga;
             List<int> startPos = new List<int> {pos[0], pos[1]};
             Console.WriteLine(id);
             if (CanMove())
@@ -98,12 +99,13 @@ namespace Dissertation_mk2
         {
             List<Ally> targets = new List<Ally>();
 
-            List<float> enemyIds = alliesInRange.Select(position => board.CheckPosition(position)).ToList();
-
-            targets.AddRange(from id in enemyIds
-                from unit in board.gameManager.allies
-                where id == unit.id
-                select unit);
+            foreach (var allyPos in alliesInRange)
+            {
+                foreach (var ally in board.gameManager.allies)
+                {
+                    if (allyPos.SequenceEqual(ally.pos)) targets.Add(ally);
+                }
+            }
 
             return LowestHp(targets);
         }

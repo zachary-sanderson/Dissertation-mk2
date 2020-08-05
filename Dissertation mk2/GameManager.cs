@@ -20,6 +20,8 @@ namespace Dissertation_mk2
         private int anxiety;
         private int cDecay = 2;
         private bool noEnemiesNear = true;
+        private GA ga;
+        private int iter;
 
         //For level ranking
         public int TurnCount;
@@ -29,9 +31,11 @@ namespace Dissertation_mk2
         private readonly Solution currentSolution;
         private List<Move> moves = new List<Move>();
 
-        public GameManager(Solution solution, int cSkill)
+        public GameManager(Solution solution, int cSkill, GA ga, int iter)
         {
             this.cSkill = cSkill;
+            this.ga = ga;
+            this.iter = iter;
             board = solution.boardObj;
             board.gameManager = this;
             currentSolution = solution;
@@ -49,14 +53,16 @@ namespace Dissertation_mk2
             Console.WriteLine("Ally Count " + allies.Count);
             while (!gameOver)
             {
+
                 TurnCount++;
                 allies = allies.OrderByDescending(ally => ally.hp).ToList();
                 foreach (var ally in allies.Where(ally => !ally.isDead))
                 {
                     if (gameOver) continue;
                     ally.engaged = false;
-                    ally.TakeTurn();
+                    ally.TakeTurn(ga);
                 }
+
 
                 Ally[] tempAllies = allies.ToArray();
                 foreach (var ally in tempAllies)
@@ -64,19 +70,22 @@ namespace Dissertation_mk2
                     ally.EndTurn();
                 }
 
+
                 allyTargetPositions.Clear();
                 foreach (var enemy in enemies.Where(enemy => !enemy.isDead))
                 {
                     if (gameOver) continue;
                     enemy.engaged = false;
-                    enemy.TakeTurn();
+                    enemy.TakeTurn(ga);
                 }
+
 
                 Enemy[] tempEnemies = enemies.ToArray();
                 foreach (var enemy in tempEnemies)
                 {
                     enemy.EndTurn();
                 }
+
 
                 if (enemies.Count == 0)
                     cDecay = 1;
@@ -90,6 +99,7 @@ namespace Dissertation_mk2
                 noEnemiesNear = true;
                 if (50 < anxiety || anxiety < -50)
                     GameOver();
+
             }
         }
 
@@ -100,7 +110,7 @@ namespace Dissertation_mk2
             Console.WriteLine(Builder(board.board));
         }
 
-        private static string Builder(IEnumerable<List<float>> board)
+        private static string Builder(IEnumerable<List<int>> board)
         {
             StringBuilder builder = new StringBuilder();
             foreach (var row in board)

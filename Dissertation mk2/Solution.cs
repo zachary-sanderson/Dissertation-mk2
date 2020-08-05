@@ -8,7 +8,7 @@ namespace Dissertation_mk2
     public class Solution
     {
         public string Personality;
-        public List<List<float>> initialBoard = new List<List<float>>();
+        public List<List<int>> initialBoard = new List<List<int>>();
         public Board boardObj;
         public int numItems;
         public int numEnemies;
@@ -25,12 +25,14 @@ namespace Dissertation_mk2
         public List<int> allyHp;
         public bool wasGameOver;
         public List<Move> moves;
+        private GA ga;
 
         //Personality evaluation
         
 
-        public Solution(Board board, string personality, double pValue, int numItems, int numEnemies)
+        public Solution(Board board, string personality, double pValue, int numItems, int numEnemies, GA ga)
         {
+            this.ga = ga;
             SaveBoard(board.board);
             boardObj = board;
             Personality = personality;
@@ -41,7 +43,14 @@ namespace Dissertation_mk2
             enemyPositions = board.enemyPositions;
         }
 
-        private void SaveBoard(IEnumerable<List<float>> initial)
+        public Solution(Solution solution)
+        {
+            ga = solution.ga;
+            SaveBoard(solution.initialBoard.AsReadOnly());
+
+        }
+
+        private void SaveBoard(IEnumerable<List<int>> initial)
         {
             foreach (var initialRow in initial.Select(row => row.ToList()))
             {
@@ -72,7 +81,7 @@ namespace Dissertation_mk2
             Console.WriteLine("Hp: " + IntBuilder(allyHp));
             Console.WriteLine("Num turns: " + numTurns);
             Console.WriteLine("Num items: " + score + "/" + numItems);
-            Console.WriteLine("Num enemies killed: " + enemKilled + "/5");
+            Console.WriteLine("Num enemies killed: " + enemKilled + "/" + numEnemies);
         }
 
         public List<int> CompareMap(Solution other)
@@ -120,6 +129,20 @@ namespace Dissertation_mk2
             foreach (var value in ints)
             {
                 builder.Append(value + " ");
+            }
+            return builder.ToString();
+        }
+
+        private static string Builder(IEnumerable<List<int>> board)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var row in board)
+            {
+                foreach (var tile in row)
+                {
+                    builder.Append(tile + " ");
+                }
+                builder.AppendLine();
             }
             return builder.ToString();
         }
