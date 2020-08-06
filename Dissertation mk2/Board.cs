@@ -44,10 +44,17 @@ namespace Dissertation_mk2
 
         public int numItems;
         public int numEnemies;
-        public int numWalls ;
-        public int numAllies ;
+        public int numWalls;
+        public int numAllies;
 
-        private GA ga;
+        private readonly int[][] neighbourPositions = 
+        {
+            new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 }, new[] { 1, 1 },
+            new[] { -1, 1 }, new[] { -1, -1 }, new[] { 1, -1 } 
+        };
+
+
+
 
         /*
         public Board()
@@ -57,24 +64,23 @@ namespace Dissertation_mk2
         }
         */
 
-        public Board(double pValue, int numColumns, int numRows, int wallCountMin, int wallCountMax, int itemCountMin, int itemCountMax, int enemyCountMin, int enemyCountMax, GA ga)
+        public Board(Markov markov, int numColumns, int numRows, int wallCountMin, int wallCountMax, int itemCountMin, int itemCountMax, int enemyCountMin, int enemyCountMax, bool smooth = false)
         {
-            markov = new Markov(pValue);
+            this.markov = markov;
             columns = numColumns;
             rows = numRows;
             wallCount= new Count(wallCountMin, wallCountMax);
             itemCount = new Count(itemCountMin, itemCountMax);
             enemyCount = new Count(enemyCountMin, enemyCountMax);
-            this.ga = ga;
-            SetupScene();
+            if (smooth) SetupSmoothScene();
+            else SetupScene();
         }
 
-        public Board(List<List<int>> board, double pValue, int numColumns, int numRows, int wallCountMin, int wallCountMax, int itemCountMin, int itemCountMax, int enemyCountMin, int enemyCountMax, GA ga)
+        public Board(List<List<int>> board, Markov markov, int numColumns, int numRows, int wallCountMin, int wallCountMax, int itemCountMin, int itemCountMax, int enemyCountMin, int enemyCountMax)
         {
-            this.ga = ga;
             validated = false;
             CopyBoard(board);
-            markov = new Markov(pValue);
+            this.markov = markov;
             columns = numColumns;
             rows = numRows;
             wallCount = new Count(wallCountMin, wallCountMax);
@@ -93,14 +99,14 @@ namespace Dissertation_mk2
             }
         }
 
-        public bool Equals(Board obj)
+        public bool Equals(List<List<int>> obj)
         {
             bool equals = true;
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < columns; j++)
                 {
-                    if (board[i][j] != obj.board[i][j]) equals = false;
+                    if (board[i][j] != obj[i][j]) equals = false;
                 }
             }
 
@@ -330,7 +336,7 @@ namespace Dissertation_mk2
         //*****************************************************************
         //             TESTING SMOOTH BOARD
         //*****************************************************************
-        /*
+        
         public void SetupSmoothScene()
         {
             //0=Floor,1=Wall,2=Item,3=goal,4=enemy,5=player
@@ -391,7 +397,7 @@ namespace Dissertation_mk2
             }
             return count;
         }
-        */
+        
         private static string Builder(IEnumerable<List<int>> board)
         {
             StringBuilder builder = new StringBuilder();

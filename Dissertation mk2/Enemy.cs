@@ -15,9 +15,8 @@ namespace Dissertation_mk2
             this.pos = pos;
         }
 
-        public void TakeTurn(GA ga)
+        public void TakeTurn()
         {
-            this.ga = ga;
             List<int> startPos = new List<int> {pos[0], pos[1]};
             Console.WriteLine(id);
             if (CanMove())

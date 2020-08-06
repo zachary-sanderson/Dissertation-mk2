@@ -27,7 +27,7 @@ namespace Dissertation_mk2
         private List<Board> Infeasible = new List<Board>();
 
 
-        private const int NumGenerations = 10;
+        private const int NumGenerations = 50;
         private const int NumParents = 50;
         private const int MaxInfeasible = 50;
         private const float MutationRate = 0.01f;
@@ -38,7 +38,7 @@ namespace Dissertation_mk2
 
         private int iter;
 
-
+        private Markov markov;
 
         //Temp
         int[][] allyPositions = { new[] { Rows - 3, 0 }, new[] { Rows - 2, 0 },
@@ -52,21 +52,24 @@ namespace Dissertation_mk2
             //double pValue = rand.NextDouble();
             double pValue = 0d;
             List<int> numTurns = new List<int>();
-
+            markov = new Markov(pValue);
             while (feasible.Count < NumParents)
             {
-                Board newBoard = new Board(pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this);
+                Board newBoard = new Board(markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, true);
                 IsFeasible(newBoard, pValue);
             }
             List<double> bestFlowEachTurn = new List<double>();
             List<int> numFeasiblePerGen = new List<int>();
+            List<int> diffSolutionsEachTurn = new List<int>();
             while (iter < NumGenerations)
             {
                 numFeasiblePerGen.Add(feasible.Count);
+
                 foreach (var solution in feasible)
                 {
-                    GameManager gm = new GameManager(solution, 0, this, iter);
+                    GameManager gm = new GameManager(solution, 0);
                     gm.PlayGame();
+                   // markov.Transition();
                 }
 
                 iter++;
@@ -76,12 +79,17 @@ namespace Dissertation_mk2
                     if (solution.averageFlow < bestFlow && !solution.wasGameOver)
                     {
                         bestFlow = Math.Abs(solution.averageFlow);
-                        bestSolution = new Solution(solution);
+                        var bestBoard = new Board(solution.initialBoard, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax);
+
+                        bestSolution = new Solution(bestBoard, bestBoard.markov.Personality, pValue, bestBoard.numItems, bestBoard.numEnemies);
+                        //bestSolution = new Solution(solution);
                         Console.WriteLine(bestFlow);
                         Console.WriteLine(Builder(bestSolution.initialBoard));
                     }
                     numTurns.Add(solution.numTurns);
                 }
+
+                diffSolutionsEachTurn.Add(HowManyDifferentThanBest());
 
                 Console.WriteLine("Best average flow at " + iter + " generations: " + bestFlow);
                 Console.WriteLine("Best board:");
@@ -104,16 +112,19 @@ namespace Dissertation_mk2
             Console.WriteLine(Builder(bestSolution.initialBoard));
 
             //EstimatePersonality(personalityFLagsList);;
-            var finalBoard = new Board(bestSolution.initialBoard, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this);
-            var finalSolution = new Solution(finalBoard, finalBoard.markov.Personality, pValue, finalBoard.numItems,
-                finalBoard.numEnemies, this);
-            var finalGM = new GameManager(finalSolution, 0, this, 10);
+            var finalBoard = new Board(bestSolution.initialBoard, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax);
+
+            var finalSolution = new Solution(finalBoard, finalBoard.markov.Personality, pValue, finalBoard.numItems, finalBoard.numEnemies);
+
+            var finalGM = new GameManager(finalSolution, 0);
+
             finalGM.PlayGame();
 
             for(int i = 0; i < NumGenerations; i++)
             {
                 Console.WriteLine("num Feasible: " + numFeasiblePerGen[i]);
                 Console.WriteLine(bestFlowEachTurn[i]);
+                Console.WriteLine("Num diff solutions in feasible: " + diffSolutionsEachTurn[i]);
             }
             /*
             Console.WriteLine("Average num turns: " + (double)numTurns.Sum()/numTurns.Count);
@@ -124,6 +135,11 @@ namespace Dissertation_mk2
                 Console.WriteLine("turn:" + move.TurnNum + "  " + move.Type + " moves from " + move.StartPos[0] + " " + move.StartPos[1] + " to " + move.EndPos[0] + " " + move.EndPos[1] + " and " + attacked);
             }
             */
+        }
+
+        private int HowManyDifferentThanBest()
+        {
+            return feasible.Count(solution => !bestSolution.boardObj.Equals(solution.boardObj));
         }
 
         public void BugTest()
@@ -146,7 +162,7 @@ namespace Dissertation_mk2
                         Console.WriteLine("BUG HERE");
                     }
 
-                    if (board.Equals(solution.boardObj))
+                    if (board.Equals(solution.initialBoard))
                     {
                         Console.WriteLine("BUG HERE");
                         Console.WriteLine("INFEASIBLE   NUMITEMS:" + board.numItems + " NUMENEMIES:" + board.numEnemies + " VALIDATED:" + board.validated);
@@ -198,12 +214,13 @@ namespace Dissertation_mk2
 
         private void CrossoverFeasible(double pValue)
         {
+            if (feasible.Count < 2) return;
             var parents = ChooseParents(feasible);
             feasible.Clear();
             for (int i = 1; i < parents.Count; i += 2)
             {
                 var children = Crossover(parents[i - 1].initialBoard.AsReadOnly(), parents[i].initialBoard.AsReadOnly());
-                foreach (var newBoard in children.Select(child => new Board(child, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this)))
+                foreach (var newBoard in children.Select(child => new Board(child, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax)))
                 { ;
                     IsFeasible(newBoard, pValue);
                 }
@@ -234,7 +251,7 @@ namespace Dissertation_mk2
                 for (int i = 1; i < MaxInfeasible; i += 2)
                 {
                     var children = Crossover(parents[i - 1].board.AsReadOnly(), parents[i].board.AsReadOnly());
-                    foreach (var newBoard in children.Select(child => new Board(child, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this)))
+                    foreach (var newBoard in children.Select(child => new Board(child, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax)))
                     {
                         IsFeasible(newBoard, pValue);
                     }
@@ -243,13 +260,14 @@ namespace Dissertation_mk2
             else
             {
                 List<List<List<int>>> children = new List<List<List<int>>>();
+                //Infeasible = Infeasible.OrderBy(a => Guid.NewGuid()).ToList();
                 for (int i = 1; i < max; i += 2)
                 {
                     var childrenToAdd = Crossover(Infeasible[i - 1].board.AsReadOnly(), Infeasible[i].board.AsReadOnly());
                     children.AddRange(childrenToAdd);
                 }
                 Infeasible.Clear();
-                foreach (var newBoard in children.Select(child => new Board(child, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this)))
+                foreach (var newBoard in children.Select(child => new Board(child, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax)))
                 {
                     IsFeasible(newBoard, pValue);
                 }
@@ -263,11 +281,11 @@ namespace Dissertation_mk2
             Console.WriteLine("num walls = " + newBoard.numWalls);
             Console.WriteLine(Builder(newBoard.board));
             List<List<int>> copyNewBoard = new List<List<int>>(newBoard.board);
-            Board copy = new Board(copyNewBoard, pValue, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, this);
+            Board copy = new Board(copyNewBoard, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax);
             if (copy.validated)
             {
                 feasible.Add(new Solution(copy, newBoard.markov.Personality, pValue, newBoard.numItems,
-                    newBoard.numEnemies, this));
+                    newBoard.numEnemies));
             }
             else
             {
@@ -380,6 +398,7 @@ namespace Dissertation_mk2
         private static List<Solution> ChooseParents(List<Solution> solutions)
         {
             var probabilities = GetProbabilities(solutions);
+            if (probabilities.Sum() == 0) return solutions;
             List<Solution> parents = new List<Solution>();
             Random rand = new Random();
             while (parents.Count < NumParents)
@@ -389,6 +408,7 @@ namespace Dissertation_mk2
                 for (int i = 0; i < solutions.Count; i++)
                 {
                     cumProb += probabilities[i];
+                    Console.WriteLine(probabilities[i]);
                     if (prob < cumProb)
                         parents.Add(solutions[i]);
                 }
@@ -404,7 +424,9 @@ namespace Dissertation_mk2
             List<double> invertedFitness = solutions.Select(solution => max - solution.averageFlow).ToList();
 
             var cumFitness = invertedFitness.Sum();
+            if (cumFitness == 0) cumFitness = 1; 
             List<double> probabilities = invertedFitness.Select(fitness => fitness / cumFitness).ToList();
+
             return probabilities;
         }
 
@@ -429,6 +451,7 @@ namespace Dissertation_mk2
                 for (int i = 0; i < Infeasible.Count; i++)
                 {
                     cumProb += probabilities[i];
+                    Console.WriteLine(probabilities[i]);
                     if (prob < cumProb)
                     {
                         if (Infeasible[i].board[0][Columns-1] != 3)

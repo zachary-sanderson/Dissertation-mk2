@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 
 namespace Dissertation_mk2
@@ -21,9 +22,8 @@ namespace Dissertation_mk2
 
 
 
-        public void TakeTurn(GA ga)
+        public void TakeTurn()
         {
-            this.ga = ga;
             List<int> startPos = new List<int> { pos[0], pos[1] };
             Console.WriteLine(id);
             if (CanMove())
@@ -99,7 +99,26 @@ namespace Dissertation_mk2
             }
         }
 
+        public bool CheckForReachableObjective()
+        {
+            bool reachableObjective = false;
+            var (_, reachableGoal) = FindPath(pos, board.goalPos);
+            if (reachableGoal) reachableObjective = true;
 
+            foreach (var item in board.itemPositions)
+            {
+                var (_, reachable) = FindPath(pos, item);
+                if (reachable) reachableObjective = true;
+            }
+
+            foreach (var enemy in board.gameManager.enemies.Where(enemy => enemy.hp > 0))
+            {
+                var (_, reachable) = FindPath(pos, enemy.pos);
+                if (reachable) reachableObjective = true;
+            }
+
+            return reachableObjective;
+        }
 
 
 
@@ -127,11 +146,22 @@ namespace Dissertation_mk2
                 }
             }
             //If close to game over then abandon remaining enemies/items and head to goal
+            /*
             else if (nearGameOver)
             {
-                List<int> move = pathToGoal.Count < range + 1 ? pathToGoal.Last() : pathToGoal[range];
-                SwapPosition(move);
+                if (goalInRange)
+                {
+                    SwapPosition(board.goalPos);
+                    board.gameManager.LevelComplete();
+                }
+                else
+                {
+
+                    List<int> move = pathToGoal.Count < range + 1 ? pathToGoal.Last() : pathToGoal[range];
+                    SwapPosition(move);
+                }
             }
+            */
             else if (enemiesInRange.Count > 0)
             {
                 FindEnemyToAttack();
@@ -239,7 +269,7 @@ namespace Dissertation_mk2
         /*If there are no enemies in range, moves towards the goal*/
         private List<int> BestMove()
         {
-            List<int> move = null;
+            List<int> move;
 
             if (board.markov.Spread)
             {
@@ -258,7 +288,12 @@ namespace Dissertation_mk2
 
             else
             {
-                move = BestGroupUpMove();
+                var enemyAlive = false;
+                foreach (var _ in board.gameManager.enemies.Where(enemy => enemy.hp > 0))
+                {
+                    enemyAlive = true;
+                }
+                move = enemyAlive ? BestGroupUpMove() : SpreadForItems();
             }
 
             
@@ -267,6 +302,7 @@ namespace Dissertation_mk2
                 return move;
             return pathToGoal.Count < range + 1 ? pathToGoal.Last() : pathToGoal[range];
         }
+
 
         //Return move closest to the nearest item that DOES NOT have too many allies moving towards it this turn already
         private List<int> BestSpreadMove()
@@ -292,6 +328,7 @@ namespace Dissertation_mk2
             return enemyPaths[0].Count < range + 1 ? enemyPaths[0].Last() : enemyPaths[0][range];
         }
 
+
         //Given an item position and the number of enemies near it,
         //the function returns false if too many allies are already moving towards the item position
         private bool TooManyAlliesAlready(IReadOnlyCollection<int> move, int numEnemies)
@@ -299,6 +336,7 @@ namespace Dissertation_mk2
             int count = board.gameManager.allyTargetPositions.Count(allyMove => allyMove.SequenceEqual(move));
             return count <= numEnemies;
         }
+
 
         //If PrioritiseEnemies strategy and all enemies dead spreads allies out to get remaining items
         private List<int> SpreadForItems()
@@ -322,6 +360,7 @@ namespace Dissertation_mk2
             if (penultimateIndex < 0) penultimateIndex = 0;
             return pathToGoal.Count < range + 1 ? pathToGoal[penultimateIndex] : pathToGoal[range];
         }
+
 
         //Returns move in direction of other allies target or nearest item/enemy if first ally to move this turn
         private List<int> BestGroupUpMove(bool prioritiseEnemies = false)
@@ -362,9 +401,6 @@ namespace Dissertation_mk2
             return move;
         }
 
-        
-
-        
 
 
 

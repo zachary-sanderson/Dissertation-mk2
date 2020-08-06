@@ -38,6 +38,18 @@ namespace Dissertation_mk2
             PrintMatrix();
         }
 
+        private void SetSpread(double p)
+        {
+            double prob = ((1 / (double)6) - p);
+            double[] line1 = { FiveSixths + prob, 1 - (p / 2), 1 };
+            double[] line2 = { Third + prob, 1 - p, 1 };
+            double[] line3 = { Third - p, 0.5 + prob, 1 };
+            matrix = new[] { line1, line2, line3 };
+            Spread = true;
+            Personality = "Spread";
+            Console.WriteLine("Spread");
+        }
+
         private void SetPrioritiseEnemies(double p)
         {
 
@@ -49,18 +61,6 @@ namespace Dissertation_mk2
             PrioritiseEnemies = true;
             Personality = "PrioritiseEnemies";
             Console.WriteLine("PrioritiseEnemies");
-        }
-
-        private void SetSpread(double p)
-        {
-            double prob = ((1 / (double)6) - p);
-            double[] line1 = { FiveSixths + prob, 1 - (p / 2), 1 };
-            double[] line2 = { Third + prob, 1 - p, 1 };
-            double[] line3 = { Third - p, 0.5 + prob, 1 };
-            matrix = new[] { line1, line2, line3 };
-            Spread = true;
-            Personality = "Spread";
-            Console.WriteLine("Spread");
         }
 
         private void SetGroupUp(double p)
@@ -111,18 +111,21 @@ namespace Dissertation_mk2
                     Spread = true;
                     PrioritiseEnemies = false;
                     GroupUp = false;
+                    Personality = "Spread";
                     Console.WriteLine("PrioritiseEnemies");
                     break;
                 case 1:
                     Spread = false;
                     PrioritiseEnemies = true;
                     GroupUp = false;
+                    Personality = "PrioritiseEnemies";
                     Console.WriteLine("Spread");
                     break;
                 default:
                     Spread = false;
                     PrioritiseEnemies = false;
                     GroupUp = true;
+                    Personality = "GroupUp";
                     Console.WriteLine("GroupUp");
                     break;
             }

@@ -12,7 +12,7 @@ namespace Dissertation_mk2
         public Board boardObj;
         public int numItems;
         public int numEnemies;
-        public List<List<int>> itemPositions;
+        public List<List<int>> itemPositions = new List<List<int>>();
         public List<List<int>> enemyPositions;
 
         public int score;
@@ -25,36 +25,38 @@ namespace Dissertation_mk2
         public List<int> allyHp;
         public bool wasGameOver;
         public List<Move> moves;
-        private GA ga;
 
         //Personality evaluation
         
 
-        public Solution(Board board, string personality, double pValue, int numItems, int numEnemies, GA ga)
+        public Solution(Board board, string personality, double pValue, int numItems, int numEnemies)
         {
-            this.ga = ga;
-            SaveBoard(board.board);
+            SaveBoard(board.board, board.itemPositions);
             boardObj = board;
             Personality = personality;
             this.pValue = pValue;
             this.numItems = numItems;
             this.numEnemies = numEnemies;
-            itemPositions = board.itemPositions;
             enemyPositions = board.enemyPositions;
         }
 
+        /*
         public Solution(Solution solution)
         {
-            ga = solution.ga;
             SaveBoard(solution.initialBoard.AsReadOnly());
-
         }
+        */
 
-        private void SaveBoard(IEnumerable<List<int>> initial)
+        private void SaveBoard(IEnumerable<List<int>> initial, IEnumerable<List<int>> itemPositionsEnumerable)
         {
             foreach (var initialRow in initial.Select(row => row.ToList()))
             {
                 initialBoard.Add(initialRow);
+            }
+
+            foreach (var pos in itemPositionsEnumerable.Select(itemPos => itemPos.ToList()))
+            {
+                itemPositions.Add(pos);
             }
         }
 
@@ -84,9 +86,24 @@ namespace Dissertation_mk2
             Console.WriteLine("Num enemies killed: " + enemKilled + "/" + numEnemies);
         }
 
+        public bool Equals(List<List<int>> obj, int rows, int columns)
+        {
+            bool equals = true;
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    if (initialBoard[i][j] != obj[i][j]) equals = false;
+                }
+            }
+
+            return equals;
+        }
+
         public List<int> CompareMap(Solution other)
         {
             return new List<int> {CompareWalls(other), CompareEnemies(other).Sum(), CompareItems(other).Sum()};
+            //return CompareWalls(other) + CompareEnemies(other).Sum() + CompareItems(other).Sum();
         }
 
         private int CompareWalls(Solution other)
@@ -94,11 +111,12 @@ namespace Dissertation_mk2
             int count = 0;
             for (int i = 0; i < initialBoard.Count; i++)
             {
-                for (int j = 0; i < initialBoard.Count; i++)
+                for (int j = 0; j < initialBoard.Count; j++)
                 {
-                    var tile = (int)initialBoard[i][j];
-                    if (tile != 1) continue;
-                    if ((int) initialBoard[i][j] != (int) other.initialBoard[i][j]) count++;
+                    var tile1 = initialBoard[i][j];
+                    var tile2 = other.initialBoard[i][j];
+                    if (tile1 == 1 && tile2 != 1) count++;
+                    if (tile2 == 1 && tile1 != 1) count++;
                 }
             }
             return count;
@@ -133,7 +151,7 @@ namespace Dissertation_mk2
             return builder.ToString();
         }
 
-        private static string Builder(IEnumerable<List<int>> board)
+        public string Builder(IEnumerable<List<int>> board)
         {
             StringBuilder builder = new StringBuilder();
             foreach (var row in board)

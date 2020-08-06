@@ -20,8 +20,6 @@ namespace Dissertation_mk2
         private int anxiety;
         private int cDecay = 2;
         private bool noEnemiesNear = true;
-        private GA ga;
-        private int iter;
 
         //For level ranking
         public int TurnCount;
@@ -31,11 +29,9 @@ namespace Dissertation_mk2
         private readonly Solution currentSolution;
         private List<Move> moves = new List<Move>();
 
-        public GameManager(Solution solution, int cSkill, GA ga, int iter)
+        public GameManager(Solution solution, int cSkill)
         {
             this.cSkill = cSkill;
-            this.ga = ga;
-            this.iter = iter;
             board = solution.boardObj;
             board.gameManager = this;
             currentSolution = solution;
@@ -56,11 +52,12 @@ namespace Dissertation_mk2
 
                 TurnCount++;
                 allies = allies.OrderByDescending(ally => ally.hp).ToList();
+                //allies = new List<Ally>(allies.OrderBy(ally => ally.CheckForReachableObjective() ? 0 : 1));
                 foreach (var ally in allies.Where(ally => !ally.isDead))
                 {
                     if (gameOver) continue;
                     ally.engaged = false;
-                    ally.TakeTurn(ga);
+                    ally.TakeTurn();
                 }
 
 
@@ -76,7 +73,7 @@ namespace Dissertation_mk2
                 {
                     if (gameOver) continue;
                     enemy.engaged = false;
-                    enemy.TakeTurn(ga);
+                    enemy.TakeTurn();
                 }
 
 
@@ -94,8 +91,6 @@ namespace Dissertation_mk2
                     continue;
                 UpdateAnxiety();
                 Console.WriteLine(anxiety);
-                if (TurnCount % 5 == 0)
-                    board.markov.Transition();
                 noEnemiesNear = true;
                 if (50 < anxiety || anxiety < -50)
                     GameOver();

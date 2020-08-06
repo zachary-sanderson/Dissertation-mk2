@@ -24,8 +24,6 @@ namespace Dissertation_mk2
         public bool goalInRange;
         public bool isDead = false;
 
-        protected GA ga;
-
         protected bool CanMove()
         {
             bool canMove = false;
@@ -117,6 +115,9 @@ namespace Dissertation_mk2
                 path.Add(currentNode.Parent.Pos);
                 currentNode = currentNode.Parent;
             }
+
+            if (targetFound == false)
+                Console.WriteLine(targetPos[0] + " " + targetPos[1] + " is unreachable");
 
             path.Reverse();
             return (path, targetFound);
