@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace Dissertation_mk2
 {
@@ -17,13 +15,16 @@ namespace Dissertation_mk2
         public List<int> EndPos { get; }
         public bool Attack { get; }
 
-        public Move(int turnNum, UnitType type, List<int> startPos, List<int> endPos, bool attack)
+        public bool ItemPickup { get; }
+
+        public Move(int turnNum, UnitType type, List<int> startPos, List<int> endPos, bool attack, bool itemPickup)
         {
             TurnNum = turnNum;
             Type = type;
             StartPos = startPos;
             EndPos = endPos;
             Attack = attack;
+            ItemPickup = itemPickup;
         }
     }
 }

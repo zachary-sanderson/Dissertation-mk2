@@ -16,10 +16,12 @@ namespace Dissertation_mk2
 
         //For modelling flow
         private readonly List<int> anxietyEachTurn = new List<int>();
-        public int cSkill;
+        public double cSkill;
         private int anxiety;
-        private int cDecay = 2;
+        private int cDecay = 1;
         private bool noEnemiesNear = true;
+
+        private int turnsWithoutAction = 0;
 
         //For level ranking
         public int TurnCount;
@@ -29,7 +31,7 @@ namespace Dissertation_mk2
         private readonly Solution currentSolution;
         private List<Move> moves = new List<Move>();
 
-        public GameManager(Solution solution, int cSkill)
+        public GameManager(Solution solution, double cSkill)
         {
             this.cSkill = cSkill;
             board = solution.boardObj;
@@ -92,7 +94,7 @@ namespace Dissertation_mk2
                 UpdateAnxiety();
                 Console.WriteLine(anxiety);
                 noEnemiesNear = true;
-                if (50 < anxiety || anxiety < -50)
+                if (50 < anxiety || anxiety < -50 || TurnCount > 50)
                     GameOver();
 
             }
@@ -163,55 +165,61 @@ namespace Dissertation_mk2
         //Called each term to update the anxiety value;
         private void UpdateAnxiety()
         {
-            foreach (Ally ally in allies)
-            {
-                CalculateAnxiety(ally);
-            }
 
-            if (enemies.Count == 0) cDecay = 1;
-            if (noEnemiesNear)
-                anxiety -= 1;
-            else
-                anxiety -= cDecay;
+            if (enemies.Count == 0)
+            {
+                if (anxiety < 0) anxiety++;
+                if (anxiety > 0) anxiety--;
+            }
+            else AnxietyCalc();
             anxietyEachTurn.Add(anxiety);
         }
 
-        private void CalculateAnxiety(Ally ally)
+        private void AnxietyCalc()
         {
-            //Increases anxiety based on how many enemies are in range to attack next turn
-            if (ally.enemiesInRange != null)
-            {
-                noEnemiesNear = false;
-                for (int i = 1; i < ally.enemiesInRange.Count; i++)
-                {
-                    anxiety += ally.CheckAnxiety();
-                }
-            }
+            int alliesHp = allies.Sum(ally => ally.hp);
+            int enemiesHp = enemies.Sum(enemy => enemy.hp);
 
-            //Increases anxiety relative to Hp lost this turn
-            int loss = ally.initialHp - ally.hp;
-            if (loss > 2)
-            {
-                anxiety += loss * 2;
-            }
-            else
-            {
-                anxiety += loss;
-            }
-            ally.UpdateHp();
+            int hpDiff = alliesHp - enemiesHp;
+
+            Console.WriteLine("hp diff = " + hpDiff);
+
+            if (hpDiff > 2) anxiety--;
+            if (hpDiff < -2) anxiety++;
+
+            int alliesHpLossThisTurn = allies.Sum(ally => ally.initialHp - ally.hp);
+            int enemiesHpLossThisTurn = allies.Sum(enemy => enemy.initialHp - enemy.hp);
+
+            if (alliesHpLossThisTurn > 0 || enemiesHpLossThisTurn > 0) turnsWithoutAction = 0;
+            else turnsWithoutAction++;
+
+            if (turnsWithoutAction > 2) anxiety-=cDecay;
+
+            int hpLossDiffThisTurn = alliesHpLossThisTurn - enemiesHpLossThisTurn;
+
+            Console.WriteLine("hp loss this turn = " + hpLossDiffThisTurn);
+
+            if (hpLossDiffThisTurn > 2) anxiety--;
+            if (hpLossDiffThisTurn < -2) anxiety++;
+
+            int unitDiff = allies.Count - enemies.Count;
+
+            Console.WriteLine("unit diff = " + unitDiff);
+
+            if (unitDiff > 0) anxiety--;
+            if (unitDiff < 0) anxiety++;
+
         }
 
         public void AllyDead(Ally ally)
         {
             ally.isDead = true;
-            anxiety += 5;
         }
 
         public void EnemyDead(Enemy enemy)
         {
             enemy.isDead = true;
             EnemiesKilled++;
-            anxiety -= 3;
         }
     }
 }

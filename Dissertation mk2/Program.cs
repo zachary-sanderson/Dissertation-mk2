@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Accord;
+using static Dissertation_mk2.DataStorage;
 
 namespace Dissertation_mk2
 {
@@ -22,12 +24,12 @@ namespace Dissertation_mk2
 
             int iter = 0;
 
-            double pValue = 0.5d;
+            double pValue = 1d;
             Markov markov = new Markov(pValue);
 
             List<Solution> solutions = new List<Solution>();
 
-            while (iter < 50)
+            while (iter < 1000)
             {
                 Board newBoard = new Board(markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax);
                 while (!newBoard.validated)
@@ -48,7 +50,9 @@ namespace Dissertation_mk2
 
                 iter++;
             }
+            */
 
+            /*
             foreach (var solution in solutions)
             {
                 Solution closestSolution = null;
@@ -86,7 +90,16 @@ namespace Dissertation_mk2
             }
             */
 
-            _ = new GA();
+           _ = new GA();
+            
+           /*
+           foreach (var solution in solutions.Where(solution => solution.averageFlow < 1))
+           {
+               DataStorage.StoreData(solution.initialBoard, solution.averageFlow, pValue);
+           }
+           */
+           
+
         }
     }
 }

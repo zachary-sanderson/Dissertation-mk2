@@ -6,6 +6,7 @@ namespace Dissertation_mk2
 {
     public abstract class Unit
     {
+        public int initialHp;
         public int hp = 5;
         public int dmg = 1;
         public int range = 5;
@@ -15,6 +16,7 @@ namespace Dissertation_mk2
         public float id;
         public List<int> pos;
         public bool hasAttacked = false;
+        public bool itemPickup = false;
         protected readonly int[][] directions = { new[] { 1, 0 }, new[] { 0, -1 }, new[] { 0, 1 }, new[] { -1, 0 } };
 
         public List<List<int>> moves = new List<List<int>>();
@@ -109,7 +111,18 @@ namespace Dissertation_mk2
 
             } while (openList.Count > 0 && !targetFound && currentNode != null);
 
+            if (!targetFound)
+            {
+                var dist = 1000;
+                foreach (var node in closedList)
+                {
+                    if (node.H < dist)
+                        currentNode = node;
+                }
+            }
+
             List<List<int>> path = new List<List<int>> { currentPos };
+
             while (currentNode?.Parent != null)
             {
                 path.Add(currentNode.Parent.Pos);
@@ -165,6 +178,11 @@ namespace Dissertation_mk2
                 pos[0] = move[0];
                 pos[1] = move[1];
             }
+        }
+
+        public void UpdateHp()
+        {
+            initialHp = hp;
         }
 
         /*If intended target for A* is unreachable uses another

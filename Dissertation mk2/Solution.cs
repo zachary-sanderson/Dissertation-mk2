@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Linq;
 
@@ -27,7 +28,7 @@ namespace Dissertation_mk2
         public List<Move> moves;
 
         //Personality evaluation
-        
+        public double fitness;
 
         public Solution(Board board, string personality, double pValue, int numItems, int numEnemies)
         {
@@ -58,6 +59,11 @@ namespace Dissertation_mk2
             {
                 itemPositions.Add(pos);
             }
+        }
+
+        public void UpdateFitness(double fitness)
+        {
+            this.fitness = fitness;
         }
 
         public void UpdateValues(int score, int numTurns, int enemKilled, List<int> anxietyEachTurn, List<int> allyHp, List<Move> moves, bool wasGameOver = false)
@@ -121,6 +127,53 @@ namespace Dissertation_mk2
             }
             return count;
         }
+
+        /*
+        private int TestCompareWalls(Solution other)
+        {
+            
+            for (int i = 0; i < initialBoard.Count; i++)
+            {
+                for (int j = 0; j < initialBoard.Count; j++)
+                {
+                    
+                }
+            }
+
+            //
+
+            int row = boardObj.rows / 5;
+            int col =  boardObj.columns / 5;
+
+            List<List<int>> segmentDiffs = new List<List<int>>();
+            for (int i = 0; i < boardObj.rows; i += row)
+            {
+                for (int j = 0; j < boardObj.columns; j += col)
+                {
+                    var count = 0;
+                    for (int k = i; k < (i += row); k++)
+                    {
+                        for (int l = j; l < (j += col); l++)
+                        {
+                            if (initialBoard[i][j] == 1) wallPos1.Add(new List<int> { i, j });
+                            if (other.initialBoard[i][j] == 1) wallPos2.Add(new List<int> { i, j });
+                        }
+                    }
+                    segmentDiffs[i/row][j/col] 
+                }
+            }
+
+            //
+
+            var count = 0;
+            foreach (var pos in wallPos1)
+            {
+                
+            }
+
+            return count;
+        }
+        */
 
         //For two solutions compares the shortest distance each enemy has from another enemy in the initial map.
         private IEnumerable<int> CompareEnemies(Solution other)

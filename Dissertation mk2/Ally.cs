@@ -7,7 +7,6 @@ namespace Dissertation_mk2
 {
     public class Ally : Unit
     {
-        public int initialHp;
         private List<List<int>> pathToGoal;
         private List<List<List<int>>> enemyPaths = new List<List<List<int>>>();
         private List<List<List<int>>> itemPaths = new List<List<List<int>>>();
@@ -35,8 +34,9 @@ namespace Dissertation_mk2
                 Console.WriteLine("Can't Move.");
 
             List<int> endPos = new List<int> { pos[0], pos[1] };
-            board.gameManager.AddMove(new Move(board.gameManager.TurnCount, Dissertation_mk2.Move.UnitType.Ally, startPos, endPos, hasAttacked));
+            board.gameManager.AddMove(new Move(board.gameManager.TurnCount, Dissertation_mk2.Move.UnitType.Ally, startPos, endPos, hasAttacked, itemPickup));
             hasAttacked = false;
+            itemPickup = false;
         }
 
 
@@ -258,6 +258,7 @@ namespace Dissertation_mk2
             board.itemPositions.Remove(move);
             SwapPosition(move);
             board.score += board.itemValue;
+            itemPickup = true;
         }
 
 
@@ -283,7 +284,7 @@ namespace Dissertation_mk2
                 {
                     enemyAlive = true;
                 }
-                move = enemyAlive ? BestGroupUpMove(true) : SpreadForItems();
+                move = enemyAlive ? BestPrioritiseEnemies() : SpreadForItems();
             }
 
             else
@@ -359,6 +360,23 @@ namespace Dissertation_mk2
             var penultimateIndex = pathToGoal.Count - 2;
             if (penultimateIndex < 0) penultimateIndex = 0;
             return pathToGoal.Count < range + 1 ? pathToGoal[penultimateIndex] : pathToGoal[range];
+        }
+
+        private List<int> BestPrioritiseEnemies()
+        {
+            List<int> move = null;
+            int closestObjective = 1000;
+
+            foreach (var enemyPath in enemyPaths)
+            {
+                var count = enemyPath.Count;
+                if (count >= closestObjective) continue;
+                closestObjective = count;
+                var target = enemyPath.Last();
+                move = enemyPath.Count < range + 1 ? target : enemyPath[range];
+            }
+
+            return move;
         }
 
 
@@ -502,11 +520,6 @@ namespace Dissertation_mk2
                 itemPaths.Clear();
                 goalInRange = false;
             }
-        }
-
-        public void UpdateHp()
-        {
-            initialHp = hp;
         }
 
         public int CheckAnxiety()

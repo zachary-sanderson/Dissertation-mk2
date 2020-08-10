@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
+using static Dissertation_mk2.DataStorage;
 
 
 namespace Dissertation_mk2
@@ -12,8 +11,8 @@ namespace Dissertation_mk2
     {
         private const int Rows = 25;
         private const int Columns = 25;
-        private const int WallCountMin = 100;
-        private const int WallCountMax = 140;
+        private const int WallCountMin = (int)(0.2 * (Rows * Columns));
+        private const int WallCountMax = (int)(0.25*(Rows*Columns));
         private const int ItemCountMin = 4;
         private const int ItemCountMax = 4;
         private const int EnemyCountMin = 5;
@@ -28,12 +27,12 @@ namespace Dissertation_mk2
 
 
         private const int NumGenerations = 50;
-        private const int NumParents = 50;
-        private const int MaxInfeasible = 50;
+        private const int NumParents = 30;
+        private const int MaxInfeasible = 30;
         private const float MutationRate = 0.01f;
 
         private readonly Solution bestSolution;
-        private readonly double bestFlow = 1000;
+        private readonly double bestFitness = 1000;
         private double finalPersonalityEstimate;
 
         private int iter;
@@ -50,40 +49,63 @@ namespace Dissertation_mk2
         {
             //Random rand = new Random();
             //double pValue = rand.NextDouble();
-            double pValue = 0d;
+            double pValue = 1d;
             List<int> numTurns = new List<int>();
             markov = new Markov(pValue);
             while (feasible.Count < NumParents)
             {
-                Board newBoard = new Board(markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax, true);
+                Board newBoard = new Board(markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax);
                 IsFeasible(newBoard, pValue);
             }
+
+            List<List<List<int>>> bestBoards = GetBestBoards(pValue);
+
+            List<GMM> feasibleGmms = feasibleToGmms();
+
+            GMM bestBoard = FindBestBoard(bestBoards, feasibleGmms);
+
             List<double> bestFlowEachTurn = new List<double>();
             List<int> numFeasiblePerGen = new List<int>();
             List<int> diffSolutionsEachTurn = new List<int>();
+            List<List<double>> flowsEachTurn = new List<List<double>>();
+
+            feasibleGmms.Clear();
             while (iter < NumGenerations)
             {
+                List<double> flowsThisTurn = new List<double>();
                 numFeasiblePerGen.Add(feasible.Count);
 
-                foreach (var solution in feasible)
+                feasibleGmms = feasibleToGmms();
+
+                for (int i = 0; i < feasible.Count; i++)
                 {
+                    feasible[i].UpdateFitness(bestBoard.Compare(feasibleGmms[i]));
+                    /*
                     GameManager gm = new GameManager(solution, 0);
                     gm.PlayGame();
                    // markov.Transition();
+                   flowsThisTurn.Add(solution.averageFlow);
+                   if (solution.wasGameOver)
+                   {
+                       markov.Transition();
+                   }
+                    */
                 }
+
+                flowsEachTurn.Add(flowsThisTurn);
 
                 iter++;
 
                 foreach (var solution in feasible)
                 {
-                    if (solution.averageFlow < bestFlow && !solution.wasGameOver)
+                    if (solution.fitness < bestFitness && !solution.wasGameOver)
                     {
-                        bestFlow = Math.Abs(solution.averageFlow);
-                        var bestBoard = new Board(solution.initialBoard, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax);
+                        bestFitness = solution.fitness;
+                        var bestFitnessBoard = new Board(solution.initialBoard, markov, Columns, Rows, WallCountMin, WallCountMax, ItemCountMin, ItemCountMax, EnemyCountMin, EnemyCountMax);
 
-                        bestSolution = new Solution(bestBoard, bestBoard.markov.Personality, pValue, bestBoard.numItems, bestBoard.numEnemies);
+                        bestSolution = new Solution(bestFitnessBoard, bestFitnessBoard.markov.Personality, pValue, bestFitnessBoard.numItems, bestFitnessBoard.numEnemies);
                         //bestSolution = new Solution(solution);
-                        Console.WriteLine(bestFlow);
+                        Console.WriteLine(bestFitness);
                         Console.WriteLine(Builder(bestSolution.initialBoard));
                     }
                     numTurns.Add(solution.numTurns);
@@ -91,13 +113,18 @@ namespace Dissertation_mk2
 
                 diffSolutionsEachTurn.Add(HowManyDifferentThanBest());
 
-                Console.WriteLine("Best average flow at " + iter + " generations: " + bestFlow);
+                Console.WriteLine("Best average flow at " + iter + " generations: " + bestFitness);
                 Console.WriteLine("Best board:");
                 Console.WriteLine(Builder(bestSolution.initialBoard));
                 Console.WriteLine("num enemies:"+ bestSolution.numEnemies);
                 Console.WriteLine("num items:" + bestSolution.numItems);
 
-                bestFlowEachTurn.Add(bestFlow);
+                foreach (var flow in flowsThisTurn)
+                {
+                    Console.WriteLine(flow);
+                }
+
+                bestFlowEachTurn.Add(bestFitness);
 
                 if (iter == NumGenerations) continue;
 
@@ -107,8 +134,10 @@ namespace Dissertation_mk2
 
                 Console.WriteLine("Feasible Count: " + feasible.Count);
                 Console.WriteLine("Infeasible Count: " + Infeasible.Count);
+
+                feasibleGmms.Clear();
             }
-            Console.WriteLine("Best Flow: " + bestFlow);
+            Console.WriteLine("Best Flow: " + bestFitness);
             Console.WriteLine(Builder(bestSolution.initialBoard));
 
             //EstimatePersonality(personalityFLagsList);;
@@ -116,7 +145,21 @@ namespace Dissertation_mk2
 
             var finalSolution = new Solution(finalBoard, finalBoard.markov.Personality, pValue, finalBoard.numItems, finalBoard.numEnemies);
 
-            var finalGM = new GameManager(finalSolution, 0);
+            double cSkill = 0;
+            switch (pValue)
+            {
+                case 0:
+                    cSkill = 1.46;
+                    break;
+                case 0.5:
+                    cSkill = -0.56;
+                    break;
+                case 1:
+                    cSkill = 1.46;
+                    break;
+            }
+
+            var finalGM = new GameManager(finalSolution, cSkill);
 
             finalGM.PlayGame();
 
@@ -125,16 +168,90 @@ namespace Dissertation_mk2
                 Console.WriteLine("num Feasible: " + numFeasiblePerGen[i]);
                 Console.WriteLine(bestFlowEachTurn[i]);
                 Console.WriteLine("Num diff solutions in feasible: " + diffSolutionsEachTurn[i]);
+                Console.WriteLine("Average flow this gen: " + flowsEachTurn[i].Sum()/flowsEachTurn[i].Count);
             }
             /*
-            Console.WriteLine("Average num turns: " + (double)numTurns.Sum()/numTurns.Count);
-            foreach (var move in bestSolution.moves)
+            foreach (var move in finalSolution.moves)
             {
-                string attacked;
-                attacked = move.Attack ? "attacks." : "doesn't attack.";
-                Console.WriteLine("turn:" + move.TurnNum + "  " + move.Type + " moves from " + move.StartPos[0] + " " + move.StartPos[1] + " to " + move.EndPos[0] + " " + move.EndPos[1] + " and " + attacked);
+                var attacked = move.Attack ? "attacks." : "doesn't attack.";
+                var itemPickup = "item picked up.";
+                if (!move.ItemPickup)
+                    Console.WriteLine("turn:" + move.TurnNum + "  " + move.Type + " moves from " + move.StartPos[0] + " " + move.StartPos[1] + " to " + move.EndPos[0] + " " + move.EndPos[1] + " and " + attacked);
+                else
+                    Console.WriteLine("turn:" + move.TurnNum + "  " + move.Type + " moves from " + move.StartPos[0] + " " + move.StartPos[1] + " to " + move.EndPos[0] + " " + move.EndPos[1] + " and " + itemPickup);
             }
             */
+        }
+
+        private List<List<List<int>>> GetBestBoards(double pValue)
+        {
+            List<string> names = GetBoardNames(1);
+            Console.WriteLine(names.Count);
+            foreach (var name in names)
+            {
+                Console.WriteLine(name);
+            }
+
+            return GetBoards(names);
+        }
+
+        private List<GMM> feasibleToGmms()
+        {
+            List<List<List<int>>> feasibleBoards = new List<List<List<int>>>();
+
+            foreach (var solution in feasible)
+            {
+                feasibleBoards.Add(solution.initialBoard);
+            }
+
+            return GetGmms(feasibleBoards);
+        }
+
+        private GMM FindBestBoard(List<List<List<int>>> bestBoards, List<GMM> feasibleGmms)
+        {
+            List<GMM> feasibleGmmList = feasibleGmms;
+            List<GMM> bestBoardsGmmList = GetGmms(bestBoards);
+
+            double[] boardDiffs = new double[bestBoards.Count];
+
+            for (int i = 0; i < bestBoards.Count; i++)
+            {
+                boardDiffs[i] = 0;
+                foreach (var feasibleGmm in feasibleGmmList)
+                {
+                    boardDiffs[i] += bestBoardsGmmList[i].Compare(feasibleGmm);
+                }
+            }
+
+            int min = 1000;
+            int index = 0;
+            for (int i = 0; i < boardDiffs.Length; i++)
+            {
+                if (boardDiffs[i] < min) index = i;
+            }
+
+            return bestBoardsGmmList[index];
+        }
+
+        private List<GMM> GetGmms(List<List<List<int>>> boards)
+        {
+            List<GMM> gmmList = new List<GMM>();
+            foreach (var board in boards)
+            {
+                List<List<double>> points = new List<List<double>>();
+                for (int i = 0; i < Rows; i++)
+                {
+                    for (int j = 0; j < Columns; j++)
+                    {
+                        if (board[i][j] == 1) points.Add(new List<double> { i, j });
+                    }
+                }
+                gmmList.Add(new GMM(points));
+                Console.WriteLine("GMM added for board:");
+                Console.WriteLine(Builder(board));
+            }
+
+            return gmmList;
         }
 
         private int HowManyDifferentThanBest()
@@ -142,75 +259,6 @@ namespace Dissertation_mk2
             return feasible.Count(solution => !bestSolution.boardObj.Equals(solution.boardObj));
         }
 
-        public void BugTest()
-        {
-            if (feasible.Count == 0) return;
-            foreach (var board in feasible)
-            {
-                ExtraBugTest(board.initialBoard);
-            }
-
-            if (Infeasible.Count == 0) return;
-
-
-            foreach (var board in Infeasible)
-            {
-                foreach (var solution in feasible)
-                {
-                    if (ReferenceEquals(board, solution.boardObj))
-                    {
-                        Console.WriteLine("BUG HERE");
-                    }
-
-                    if (board.Equals(solution.initialBoard))
-                    {
-                        Console.WriteLine("BUG HERE");
-                        Console.WriteLine("INFEASIBLE   NUMITEMS:" + board.numItems + " NUMENEMIES:" + board.numEnemies + " VALIDATED:" + board.validated);
-                        Console.WriteLine(Builder(board.board));
-                        Console.WriteLine("FEASIBLE     NUMITEMS:" + solution.numItems + " NUMENEMIES:" + solution.numEnemies + " VALIDATED:" + solution.boardObj.validated);
-                        Console.WriteLine(Builder(solution.boardObj.board));
-                        Console.WriteLine("FEASIBLE INITIAL BOARD");
-                        Console.WriteLine(Builder(solution.initialBoard));
-                        ExtraBugTest(board.board);
-                    }
-                }
-            }
-        }
-
-        public void ExtraBugTest(List<List<int>> board, bool infeasible = false)
-        {
-            int numItems = 0;
-            int numEnemies = 0;
-            int numWalls = 0;
-            foreach (var tile in board.SelectMany(row => row))
-            {
-                switch (tile)
-                {
-                    case 4:
-                        numEnemies++;
-                        break;
-                    case 2:
-                        numItems++;
-                        break;
-                    case 1:
-                        numWalls++;
-                        break;
-                }
-            }
-
-            if ((numItems != ItemCountMax || numEnemies != EnemyCountMax || WallCountMin > numWalls || WallCountMax < numWalls) && !infeasible)
-            {
-                Console.WriteLine("BUG HERE");
-                Console.WriteLine(Builder(board));
-            }
-            /*
-            else if (infeasible && numItems == ItemCountMax && numEnemies == EnemyCountMax && numWalls > WallCountMin && numWalls < WallCountMax)
-            {
-                Console.WriteLine("BUG HERE");
-                Console.WriteLine(Builder(board));
-            }
-            */
-        }
 
         private void CrossoverFeasible(double pValue)
         {
@@ -432,7 +480,7 @@ namespace Dissertation_mk2
 
         private static double HighestFitness(List<Solution> solutions)
         {
-            var highest = solutions.Select(solution => solution.averageFlow).Concat(new double[] {0}).Max();
+            var highest = solutions.Select(solution => solution.fitness).Concat(new double[] {0}).Max();
             return highest;
         }
 
@@ -499,27 +547,6 @@ namespace Dissertation_mk2
             return fitness;
         }
 
-
-        private void EstimatePersonality(IReadOnlyList<List<double>> personalityFlagList)
-        {
-            List<double> sums = new List<double>();
-            int count = 0;
-            for (int i = 0; i < personalityFlagList.Count; i++)
-            {
-                Console.WriteLine("Generation " + i + " flags");
-                foreach (var flag in personalityFlagList[i])
-                {
-                    Console.WriteLine(flag);
-                }
-                count += personalityFlagList[i].Count;
-                double sum = personalityFlagList[i].Sum();
-                Console.WriteLine("Generation: " + i + ". Estimated Personality: " + sum / personalityFlagList[i].Count);
-                sums.Add(sum);
-            }
-
-            finalPersonalityEstimate = (sums.Sum() / count);
-            Console.WriteLine("Final Personality Estimate: " + finalPersonalityEstimate);
-        }
 
         private static string Builder(IEnumerable<List<int>> board)
         {
