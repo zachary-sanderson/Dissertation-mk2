@@ -10,7 +10,7 @@ namespace Dissertation_mk2
         public bool Spread;
         public bool PrioritiseEnemies;
         public bool GroupUp;
-        public string Personality;
+        public string Strategy;
 
         private double[][] matrix;
 
@@ -38,6 +38,7 @@ namespace Dissertation_mk2
             PrintMatrix();
         }
 
+        //At some point in development the player would change strategies if a game over was encountered but this did not make it into the final version
         private void SetSpread(double p)
         {
             double prob = ((1 / (double)6) - p);
@@ -46,7 +47,7 @@ namespace Dissertation_mk2
             double[] line3 = { Third - p, 0.5 + prob, 1 };
             matrix = new[] { line1, line2, line3 };
             Spread = true;
-            Personality = "Spread";
+            Strategy = "Spread";
             Console.WriteLine("Spread");
         }
 
@@ -59,7 +60,7 @@ namespace Dissertation_mk2
             double[] line3 = { OneSixth + (prob / 3), 0.5 + prob, 1 };
             matrix = new[] { line1, line2, line3 };
             PrioritiseEnemies = true;
-            Personality = "PrioritiseEnemies";
+            Strategy = "PrioritiseEnemies";
             Console.WriteLine("PrioritiseEnemies");
         }
 
@@ -71,10 +72,11 @@ namespace Dissertation_mk2
             double[] line3 = { (1 - p) / 2, OneSixth + prob, 1 };
             matrix = new[] { line1, line2, line3 };
             GroupUp = true;
-            Personality = "GroupUp";
+            Strategy = "GroupUp";
             Console.WriteLine("GroupUp");
         }
 
+        /*
         public void Transition()
         {
             double transition = rand.NextDouble();
@@ -111,25 +113,26 @@ namespace Dissertation_mk2
                     Spread = true;
                     PrioritiseEnemies = false;
                     GroupUp = false;
-                    Personality = "Spread";
+                    Strategy = "Spread";
                     Console.WriteLine("PrioritiseEnemies");
                     break;
                 case 1:
                     Spread = false;
                     PrioritiseEnemies = true;
                     GroupUp = false;
-                    Personality = "PrioritiseEnemies";
+                    Strategy = "PrioritiseEnemies";
                     Console.WriteLine("Spread");
                     break;
                 default:
                     Spread = false;
                     PrioritiseEnemies = false;
                     GroupUp = true;
-                    Personality = "GroupUp";
+                    Strategy = "GroupUp";
                     Console.WriteLine("GroupUp");
                     break;
             }
         }
+        */
 
         private void PrintMatrix()
         {

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Accord.MachineLearning;
-using Accord.Statistics;
 using Accord.Statistics.Distributions.Fitting;
 using Accord.Statistics.Distributions.Multivariate;
 
@@ -11,19 +9,15 @@ namespace Dissertation_mk2
 {
     class GMM
     {
-        private double[][] samples;
+        public double[][] Means { get; }
 
-        private GaussianClusterCollection clusters;
-
-        public double[][] means { get; }
-
-        public double[] proportions { get; }
+        public double[] Proportions { get; }
 
         public GMM(List<List<double>> points) 
         {
             Accord.Math.Random.Generator.Seed = 0;
 
-            samples = points.Select(a => a.ToArray()).ToArray();
+            var samples = points.Select(a => a.ToArray()).ToArray();
 
             // Create a multivariate Gaussian for 2 dimensions
             var normal = new MultivariateNormalDistribution(2);
@@ -40,26 +34,27 @@ namespace Dissertation_mk2
             gmm.Options = options;
 
             // Estimate the Gaussian Mixture
-            clusters = gmm.Learn(samples);
+            var clusters = gmm.Learn(samples);
 
-            means = clusters.Means;
+            Means = clusters.Means;
 
-            proportions = clusters.Proportions;
+            Proportions = clusters.Proportions;
         }
 
+        //Compare another GMMs cluster to this one
         public double Compare(GMM otherGmm)
         {
-            double[][] otherMeans = otherGmm.means;
+            double[][] otherMeans = otherGmm.Means;
             var (closestGaussian , closestDists) = CompareGaussians(otherMeans);
 
-            double[] otherProportions = otherGmm.proportions;
+            double[] otherProportions = otherGmm.Proportions;
 
             double diff = 0;
 
             for (int i = 0; i < closestGaussian.Length; i++)
             {
                 var otherProportion = otherProportions[closestGaussian[i]];
-                var proportionalDiff = Math.Abs(proportions[i] - otherProportion);
+                var proportionalDiff = Math.Abs(Proportions[i] - otherProportion);
                 diff += closestDists[i] = (proportionalDiff * closestDists[i]);
             }
 
@@ -69,16 +64,16 @@ namespace Dissertation_mk2
         //Compare the means of another GMM and return the index for each closest mean in the other GMM
         private (int[], double[]) CompareGaussians(double[][] otherMeans)
         {
-            int[] closestGaussians = new int[means.Length];
-            double[] closestDists = new double[means.Length];
+            int[] closestGaussians = new int[Means.Length];
+            double[] closestDists = new double[Means.Length];
 
-            for (int i = 0; i < means.Length; i++)
+            for (int i = 0; i < Means.Length; i++)
             {
                 int closestIndex = 0;
                 double closestDistance = 1000;
                 for (int j = 0; j < otherMeans.Length; j++)
                 {
-                    var dist = CompareMeans(means[i], otherMeans[j]);
+                    var dist = CompareMeans(Means[i], otherMeans[j]);
                     if (dist < closestDistance)
                     {
                         closestDistance = dist;

@@ -6,20 +6,18 @@ namespace Dissertation_mk2
 {
     public class Enemy : Unit
     {
-        private List<List<List<int>>> enemyPaths = new List<List<List<int>>>();
 
         public Enemy(Board board, float id, List<int> pos)
         {
-            this.board = board;
-            this.id = id;
-            this.pos = pos;
-            initialHp = hp;
+            Board = board;
+            Id = id;
+            Pos = pos;
+            InitialHp = Hp;
         }
 
         public void TakeTurn()
         {
-            List<int> startPos = new List<int> {pos[0], pos[1]};
-            Console.WriteLine(id);
+            Console.WriteLine(Id);
             if (CanMove())
             {
                 CheckMoves();
@@ -28,22 +26,18 @@ namespace Dissertation_mk2
             else
                 Console.WriteLine("Can't Move.");
 
-            List<int> endPos = new List<int> { pos[0], pos[1] };
-            board.gameManager.AddMove(new Move(board.gameManager.TurnCount, Dissertation_mk2.Move.UnitType.Enemy, startPos, endPos, hasAttacked, itemPickup));
-            hasAttacked = false;
         }
 
         private void CheckMoves()
         {
-            foreach (var enemy in board.gameManager.allies)
+            foreach (var enemy in Board.GameManager.Allies)
             {
-                if (enemy.hp <= 0) continue;
-                var path = FindPath(pos, enemy.pos);
-                enemyPaths.Add(path.Item1);
-                if (path.Item1.Count < range + 1 && path.Item2)
+                if (enemy.Hp <= 0) continue;
+                var path = FindPath(Pos, enemy.Pos);
+                if (path.Item1.Count < Range + 1 && path.Item2)
                 {
-                    alliesInRange.Add(enemy.pos);
-                    Console.WriteLine("Path to Ally " + enemy.id + ":");
+                    AlliesInRange.Add(enemy.Pos);
+                    Console.WriteLine("Path to Ally " + enemy.Id + ":");
                     foreach (var node in path.Item1)
                     {
                         Console.WriteLine(node[0] + " " + node[1]);
@@ -55,12 +49,12 @@ namespace Dissertation_mk2
         private void Move()
         {
             (List<int>, bool) move;
-            if (alliesInRange != null)
+            if (AlliesInRange != null)
             {
                 Ally unit = FindTarget();
                 if (unit != null)
                 {
-                    move = FindMove(unit.pos);
+                    move = FindMove(unit.Pos);
                     if (move.Item1 != null && move.Item2)
                         SwapPosition(move.Item1);
                     Attack(unit);
@@ -84,27 +78,24 @@ namespace Dissertation_mk2
         {
             int lowestHp = 5;
             Ally target = null;
-            IEnumerable<Ally> enemies = CheckEnemiesInRange(range * 2 + 1);
+            IEnumerable<Ally> enemies = CheckEnemiesInRange(Range * 2 + 1);
 
-            foreach (var enemy in enemies.Where(enemy => enemy.hp <= lowestHp))
+            foreach (var enemy in enemies.Where(enemy => enemy.Hp <= lowestHp))
             {
-                lowestHp = enemy.hp;
+                lowestHp = enemy.Hp;
                 target = enemy;
             }
 
-            return target != null ? FindMove(target.pos) : (null, false);
+            return target != null ? FindMove(target.Pos) : (null, false);
         }
 
         protected Ally FindTarget()
         {
             List<Ally> targets = new List<Ally>();
 
-            foreach (var allyPos in alliesInRange)
+            foreach (var allyPos in AlliesInRange)
             {
-                foreach (var ally in board.gameManager.allies)
-                {
-                    if (allyPos.SequenceEqual(ally.pos)) targets.Add(ally);
-                }
+                targets.AddRange(Board.GameManager.Allies.Where(ally => allyPos.SequenceEqual(ally.Pos)));
             }
 
             return LowestHp(targets);
@@ -117,19 +108,19 @@ namespace Dissertation_mk2
             Ally enemy = null;
             foreach (var unit in targets)
             {
-                if (unit.hp == 1)
+                if (unit.Hp == 1)
                 {
                     enemy = unit;
-                    lowestHp = unit.hp;
+                    lowestHp = unit.Hp;
                 }
-                else if (unit.engaged && lowestHp != 1)
+                else if (unit.Engaged && lowestHp != 1)
                 {
                     engagedEnemy = true;
                     enemy = unit;
                 }
-                else if (!engagedEnemy && unit.hp <= lowestHp)
+                else if (!engagedEnemy && unit.Hp <= lowestHp)
                 {
-                    lowestHp = unit.hp;
+                    lowestHp = unit.Hp;
                     enemy = unit;
                 }
             }
@@ -139,24 +130,24 @@ namespace Dissertation_mk2
 
         public void Attack(Ally unit)
         {
-            hasAttacked = true;
-            Console.WriteLine(id + " attacking " + unit.id + ", units hp is " + unit.hp);
-            if (unit.engaged)
+            HasAttacked = true;
+            Console.WriteLine(Id + " attacking " + unit.Id + ", units hp is " + unit.Hp);
+            if (unit.Engaged)
             {
-                unit.hp -= dmg;
-                Console.WriteLine("After attack " + id + " health is " + hp + " and "
-                                  + unit.id + " health is " + unit.hp);
+                unit.Hp -= Dmg;
+                Console.WriteLine("After attack " + Id + " health is " + Hp + " and "
+                                  + unit.Id + " health is " + unit.Hp);
                 CheckIfDead(unit);
             }
             else
             {
-                unit.hp -= dmg;
-                if (unit.hp > 0)
+                unit.Hp -= Dmg;
+                if (unit.Hp > 0)
                 {
-                    hp -= unit.dmg;
-                    Console.WriteLine("After attack " + id + " health is " + hp + " and "
-                                      + unit.id + " health is " + unit.hp);
-                    unit.engaged = true;
+                    Hp -= unit.Dmg;
+                    Console.WriteLine("After attack " + Id + " health is " + Hp + " and "
+                                      + unit.Id + " health is " + unit.Hp);
+                    unit.Engaged = true;
                     unit.CheckIfDead(this);
                 }
                 else
@@ -168,8 +159,8 @@ namespace Dissertation_mk2
         {
             List<Ally> enemies = new List<Ally>();
 
-            enemies.AddRange(from enemy in board.gameManager.allies
-                let enemyDist = CheckDistance(pos, enemy.pos)
+            enemies.AddRange(from enemy in Board.GameManager.Allies
+                let enemyDist = CheckDistance(Pos, enemy.Pos)
                 where enemyDist <= shortestDistance
                 select enemy);
 
@@ -178,28 +169,28 @@ namespace Dissertation_mk2
 
         public void CheckIfDead(Ally ally)
         {
-            if (ally == null || ally.hp > 0) return;
-            board.board[ally.pos[0]][ally.pos[1]] = 0;
-            board.gameManager.AllyDead(ally);
-            if (board.gameManager.CheckIfGameOver())
+            if (ally == null || ally.Hp > 0) return;
+            Board.board[ally.Pos[0]][ally.Pos[1]] = 0;
+            Board.GameManager.AllyDead(ally);
+            if (Board.GameManager.CheckIfGameOver())
             {
-                board.gameManager.GameOver();
+                Board.GameManager.GameOver();
             }
         }
 
         public void EndTurn()
         {
-            if (isDead)
+            if (IsDead)
             {
-                board.gameManager.RemoveEnemyFromList(this);
+                Board.GameManager.RemoveEnemyFromList(this);
             }
             else
             {
-                moves.Clear();
-                itemsInRange.Clear();
-                enemiesInRange.Clear();
-                alliesInRange.Clear();
-                goalInRange = false;
+                Moves.Clear();
+                ItemsInRange.Clear();
+                EnemiesInRange.Clear();
+                AlliesInRange.Clear();
+                GoalInRange = false;
             }
         }
     }

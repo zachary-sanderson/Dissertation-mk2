@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.IO;
 using System.Text;
 
 namespace Dissertation_mk2
@@ -11,7 +10,7 @@ namespace Dissertation_mk2
 
         private const string cs = @"Server=localhost\SQLEXPRESS01;Database=Dissertation;Trusted_Connection=True;";
 
-        public static void StoreData(List<List<int>> board, double averageFlow, double personality)
+        public static void StoreData(List<List<int>> board, double averageFlow, double skillLevel)
         {
             using var con = new SqlConnection(cs);
             con.Open();
@@ -21,8 +20,8 @@ namespace Dissertation_mk2
                 var cmd = new SqlCommand
                 {
                     Connection = con,
-                    CommandText = "INSERT INTO boards(board, flow, personality) VALUES('" + boardName + "'," +
-                                  averageFlow + "," + personality + ")"
+                    CommandText = "INSERT INTO boards(board, flow, skillLevel) VALUES('" + boardName + "'," +
+                                  averageFlow + "," + skillLevel + ")"
                 };
 
                 cmd.ExecuteNonQuery();
@@ -56,7 +55,7 @@ namespace Dissertation_mk2
             return result.ToString();
         }
 
-        public static List<string> GetBoardNames(double personality)
+        public static List<string> GetBoardNames(double skillLevel)
         {
             using var con = new SqlConnection(cs);
             con.Open();
@@ -72,7 +71,7 @@ namespace Dissertation_mk2
                 Console.WriteLine("{0} {1} {2} {3}", rdr.GetInt32(0), rdr.GetString(1),
                     rdr.GetDouble(2), rdr.GetDouble(3));
 
-                if (Math.Abs(personality - rdr.GetDouble(3)) < 0.1d)
+                if (Math.Abs(skillLevel - rdr.GetDouble(3)) < 0.1d)
                     boardNames.Add(rdr.GetString(1));
             }
 
@@ -83,12 +82,12 @@ namespace Dissertation_mk2
         {
             var boards = new List<List<List<int>>>();
 
-            for (int i = 0; i < boardNames.Count; i++)
+            foreach (var boardName in boardNames)
             {
                 using var con = new SqlConnection(cs);
                 con.Open();
 
-                string sql = "SELECT * FROM " + boardNames[i];
+                string sql = "SELECT * FROM " + boardName;
                 var cmd = new SqlCommand(sql, con);
 
                 SqlDataReader rdr = cmd.ExecuteReader();
